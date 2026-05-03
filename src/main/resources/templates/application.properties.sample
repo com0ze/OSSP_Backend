@@ -1,0 +1,4 @@
+# 샘플 예시
+spring.datasource.url=jdbc:mysql://localhost:포트번호/DB이름?serverTimezone=Asia/Seoul
+spring.datasource.username=your_id
+spring.datasource.password=your_password
