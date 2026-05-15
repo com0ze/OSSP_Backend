@@ -52,4 +52,28 @@ public class UserReview {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reviewer_id")
     private User reviewer;
+
+    private UserReview(
+            User reviewer,
+            User reviewee,
+            BigDecimal score,
+            String comments,
+            MatchHistory matchHistory
+    ) {
+        this.reviewer = reviewer;
+        this.reviewee = reviewee;
+        this.score = score;
+        this.comments = comments;
+        this.matchHistory = matchHistory;
+    }
+
+    public static UserReview create(
+            User reviewer,
+            User reviewee,
+            BigDecimal score,
+            String comments,
+            MatchHistory matchHistory
+    ) {
+        return new UserReview(reviewer, reviewee, score, comments, matchHistory);
+    }
 }

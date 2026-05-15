@@ -40,4 +40,12 @@ public class User {
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    public User(String nickname, String email, String password) {
+        this.nickname = nickname;
+        this.email = email;
+        this.password = password;
+        this.mannerScore = BigDecimal.valueOf(0.0);
+        this.isOnDuty = false;
+    }
 }

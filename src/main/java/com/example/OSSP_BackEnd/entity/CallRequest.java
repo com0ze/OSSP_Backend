@@ -102,4 +102,9 @@ public class CallRequest {
     public void markAsCompleted() {
         this.status = RequestStatus.COMPLETED;
     }
+
+    // For testing purposes only. Consider using markAs methods or a test factory instead.
+    public void setStatus(RequestStatus status) {
+        this.status = status;
+    }
 }
