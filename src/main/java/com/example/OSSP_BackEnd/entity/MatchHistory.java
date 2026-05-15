@@ -40,4 +40,18 @@ public class MatchHistory {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "provider_id")
     private User provider;
+
+    private MatchHistory(CallRequest request, User provider) {
+        this.request = request;
+        this.provider = provider;
+        this.matchedAt = LocalDateTime.now();
+    }
+
+    public static MatchHistory create(CallRequest request, User provider) {
+        return new MatchHistory(request, provider);
+    }
+
+    public void markAsReturned(LocalDateTime returnedAt) {
+        this.returnedAt = returnedAt;
+    }
 }
