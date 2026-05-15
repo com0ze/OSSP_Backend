@@ -58,4 +58,48 @@ public class CallRequest {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "requester_id")
     private User requester;
+
+    private CallRequest(
+            String itemName,
+            String buildingName,
+            String rewardAmt,
+            String duration,
+            String memo,
+            User requester
+    ) {
+        this.itemName = itemName;
+        this.buildingName = buildingName;
+        this.rewardAmt = rewardAmt;
+        this.duration = duration;
+        this.memo = memo;
+        this.status = RequestStatus.WAITING;
+        this.requester = requester;
+    }
+
+    public static CallRequest create(
+            String itemName,
+            String buildingName,
+            String rewardAmt,
+            String duration,
+            String memo,
+            User requester
+    ) {
+        return new CallRequest(itemName, buildingName, rewardAmt, duration, memo, requester);
+    }
+
+    public void markAsMatched() {
+        this.status = RequestStatus.MATCHED;
+    }
+
+    public void markAsCanceled() {
+        this.status = RequestStatus.CANCELED;
+    }
+
+    public void markAsInUse() {
+        this.status = RequestStatus.IN_USE;
+    }
+
+    public void markAsCompleted() {
+        this.status = RequestStatus.COMPLETED;
+    }
 }
