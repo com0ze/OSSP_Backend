@@ -4,22 +4,36 @@ import com.example.OSSP_BackEnd.entity.CallRequest;
 import com.example.OSSP_BackEnd.entity.RequestStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface CallRequestRepository extends JpaRepository<CallRequest, Long> {
 
+    /*
+     상태별 대여 요청 최신순 조회 (N+1 방지 패치 조인 적용)
+     */
     @Query("SELECT cr FROM CallRequest cr JOIN FETCH cr.requester WHERE cr.status = :status ORDER BY cr.createdAt DESC")
-    List<CallRequest> findByStatusWithRequesterOrderByCreatedAtDesc(RequestStatus status);
+    List<CallRequest> findByStatusWithRequesterOrderByCreatedAtDesc(@Param("status") RequestStatus status);
 
+    /*
+     모든 대여 요청 최신순 조회 (N+1 방지 패치 조인 적용)
+     */
     @Query("SELECT cr FROM CallRequest cr JOIN FETCH cr.requester ORDER BY cr.createdAt DESC")
     List<CallRequest> findAllWithRequesterOrderByCreatedAtDesc();
 
-    @Query("SELECT cr FROM CallRequest cr JOIN FETCH cr.requester WHERE cr.requestId = :requestId")
-    Optional<CallRequest> findByIdWithRequester(Long requestId);
+    /*
+    단건 상세 조회 (N+1 방지 패치 조인 적용)
+     */
+    @Query("SELECT cr FROM CallRequest cr JOIN FETCH cr.requester WHERE cr.id = :requestId")
+    Optional<CallRequest> findByIdWithRequester(@Param("requestId") Long requestId);
 
-    // 기존 메서드는 유지하거나 필요에 따라 수정
+    /*
+    에넘 타입을 RequestStatus로 일치화
+     */
     List<CallRequest> findAllByOrderByCreatedAtDesc();
     List<CallRequest> findByStatusOrderByCreatedAtDesc(RequestStatus status);
 }

@@ -20,23 +20,28 @@ repositories {
 }
 
 dependencies {
+    // 1. Core & Database
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-security'
+    runtimeOnly 'com.mysql:mysql-connector-j'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // 2. Web & Network
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'com.fasterxml.jackson.core:jackson-databind'
-    
-    // 롬복 버전 강제 고정
+
+    // 3. Security (⚠️ 강현님의 포스트맨 테스트를 위해 현재는 주석 처리 유지, 회원가입/로그인 구현 시 해제)
+    // implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // 4. Lombok (팀원분의 맥북/자바 환경 빌드를 위해 버전 고정 유지)
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
     testCompileOnly 'org.projectlombok:lombok:1.18.34'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
-    
-    runtimeOnly 'com.mysql:mysql-connector-j'
+
+    // 5. Test Environment
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
-    testImplementation 'org.springframework.boot:spring-boot-starter-web'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 

@@ -2,27 +2,16 @@ package com.example.OSSP_BackEnd.controller;
 
 import com.example.OSSP_BackEnd.dto.request.RequestAcceptRequestDto;
 import com.example.OSSP_BackEnd.dto.request.RequestCreateDto;
-import com.example.OSSP_BackEnd.dto.response.ApiResponse;
-import com.example.OSSP_BackEnd.dto.response.RequestAcceptDto;
-import com.example.OSSP_BackEnd.dto.response.RequestResponseDto;
+import com.example.OSSP_BackEnd.dto.response.*;
 import com.example.OSSP_BackEnd.entity.CallRequest;
 import com.example.OSSP_BackEnd.entity.MatchHistory;
+import com.example.OSSP_BackEnd.entity.RequestStatus;
 import com.example.OSSP_BackEnd.service.CallRequestService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import com.example.OSSP_BackEnd.entity.RequestStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import com.example.OSSP_BackEnd.dto.response.RequestDetailResponseDto;
-import com.example.OSSP_BackEnd.dto.response.RequestListResponseDto;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,6 +33,7 @@ public class CallRequestController {
         ));
     }
 
+
     @GetMapping
     public ResponseEntity<ApiResponse<List<RequestListResponseDto>>> getRequests(
             @RequestParam(required = false) RequestStatus status
@@ -58,6 +48,22 @@ public class CallRequestController {
         ));
     }
 
+
+    @GetMapping("/nearby")
+    public ResponseEntity<ApiResponse<List<RequestListResponseDto>>> getNearbyCallRequests() {
+        // 💡 팀원의 서비스 메서드 구조에 맞추거나, 강현님이 짠 서비스 메서드를 호출하도록 연결해야 합니다.
+        List<RequestListResponseDto> requests = callRequestService.getRequests(RequestStatus.WAITING).stream()
+                .map(RequestListResponseDto::of)
+                .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(ApiResponse.success(
+                HttpStatus.OK,
+                "주변 대여 요청 목록을 성공적으로 조회했습니다.",
+                requests
+        ));
+    }
+
+
     @GetMapping("/{requestId}")
     public ResponseEntity<ApiResponse<RequestDetailResponseDto>> getRequestDetail(@PathVariable Long requestId) {
         CallRequest callRequest = callRequestService.getRequestDetail(requestId);
@@ -67,6 +73,7 @@ public class CallRequestController {
                 RequestDetailResponseDto.of(callRequest)
         ));
     }
+
 
     @PostMapping("/{requestId}/accept")
     public ResponseEntity<ApiResponse<RequestAcceptDto>> acceptRequest(
@@ -81,11 +88,13 @@ public class CallRequestController {
         ));
     }
 
+
     @PatchMapping("/{requestId}/cancel")
     public ResponseEntity<ApiResponse<Void>> cancelRequest(@PathVariable Long requestId) {
         callRequestService.cancelRequest(requestId);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, "대여 요청이 성공적으로 취소되었습니다."));
     }
+
 
     @PatchMapping("/{requestId}/handover")
     public ResponseEntity<ApiResponse<Void>> handoverItem(@PathVariable Long requestId) {
