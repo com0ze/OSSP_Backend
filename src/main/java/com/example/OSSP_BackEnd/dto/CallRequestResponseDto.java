@@ -3,7 +3,7 @@
 package com.example.OSSP_BackEnd.dto;
 
 import com.example.OSSP_BackEnd.entity.CallRequest;
-import com.example.OSSP_BackEnd.entity.CallStatus;
+import com.example.OSSP_BackEnd.entity.RequestStatus; // 💡 임포트 수정: CallStatus -> RequestStatus
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -24,7 +24,7 @@ public class CallRequestResponseDto {
     private Integer rewardAmt;
     private Integer duration;
     private String memo;
-    private CallStatus status;
+    private RequestStatus status; // 💡 타입 수정: CallStatus -> RequestStatus
     private LocalDateTime createdAt;
     private Long requesterId;
 
@@ -39,7 +39,7 @@ public class CallRequestResponseDto {
                 .memo(callRequest.getMemo())
                 .status(callRequest.getStatus())
                 .createdAt(callRequest.getCreatedAt())
-                .requesterId(callRequest.getRequesterId())
+                .requesterId(callRequest.getRequester().getUserId()) 
                 .build();
     }
 }

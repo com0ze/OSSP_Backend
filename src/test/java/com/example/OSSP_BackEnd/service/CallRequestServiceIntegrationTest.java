@@ -44,12 +44,18 @@ class CallRequestServiceIntegrationTest {
         return userRepository.save(user);
     }
 
-    private CallRequest createCallRequest(User requester, String itemName, RequestStatus status) {
-        CallRequest callRequest = CallRequest.create(itemName, "Building A", "1000", "60", "Memo", requester);
-        // CallRequest 엔티티에 직접 상태를 설정하는 setter가 없으므로, 생성 후 `markAs` 메서드를 활용하거나, 테스트용 팩토리 메서드를 추가해야 합니다.
-        // 여기서는 직접 필드에 접근하여 상태를 설정하는 예시로 진행합니다. (테스트 용도)
-        callRequestRepository.save(callRequest);
-        callRequest.setStatus(status);
+private CallRequest createCallRequest(User requester, String itemName, RequestStatus status) {
+        // 💡 해결책: 존재하지 않는 create() 대신 롬복 @Builder 사용 및 타입 일치화
+        CallRequest callRequest = CallRequest.builder()
+                .itemName(itemName)
+                .buildingName("Building A")
+                .rewardAmt(1000)
+                .duration(60)
+                .memo("Memo")
+                .requester(requester)
+                .status(status)
+                .build();
+
         return callRequestRepository.save(callRequest);
     }
 
@@ -64,13 +70,13 @@ class CallRequestServiceIntegrationTest {
         RequestAcceptRequestDto dto = new RequestAcceptRequestDto(provider.getUserId());
 
         // When
-        MatchHistory acceptedMatchHistory = callRequestService.acceptRequest(callRequest.getRequestId(), dto);
+        MatchHistory acceptedMatchHistory = callRequestService.acceptRequest(callRequest.getId(), dto);
 
         // Then
-        CallRequest foundRequest = callRequestRepository.findById(callRequest.getRequestId()).orElseThrow();
+        CallRequest foundRequest = callRequestRepository.findById(callRequest.getId()).orElseThrow();
         assertThat(foundRequest.getStatus()).isEqualTo(RequestStatus.MATCHED);
         assertThat(acceptedMatchHistory.getProvider().getUserId()).isEqualTo(provider.getUserId());
-        assertThat(acceptedMatchHistory.getRequest().getRequestId()).isEqualTo(callRequest.getRequestId());
+        assertThat(acceptedMatchHistory.getRequest().getId()).isEqualTo(callRequest.getId());
     }
 
     @Test
@@ -85,10 +91,10 @@ class CallRequestServiceIntegrationTest {
         matchHistoryRepository.save(matchHistory);
 
         // When
-        callRequestService.completeRequest(callRequest.getRequestId());
+        callRequestService.completeRequest(callRequest.getId());
 
         // Then
-        MatchHistory foundMatchHistory = matchHistoryRepository.findByRequestIdWithRequest(callRequest.getRequestId()).orElseThrow();
+        MatchHistory foundMatchHistory = matchHistoryRepository.findByRequestIdWithRequest(callRequest.getId()).orElseThrow();
         assertThat(foundMatchHistory.getReturnedAt()).isNotNull();
         assertThat(foundMatchHistory.getRequest().getStatus()).isEqualTo(RequestStatus.COMPLETED);
     }
@@ -103,7 +109,7 @@ class CallRequestServiceIntegrationTest {
         RequestAcceptRequestDto dto = new RequestAcceptRequestDto(requester.getUserId());
 
         // When & Then
-        assertThatThrownBy(() -> callRequestService.acceptRequest(callRequest.getRequestId(), dto))
+        assertThatThrownBy(() -> callRequestService.acceptRequest(callRequest.getId(), dto))
                 .isInstanceOf(SelfAcceptNotAllowedException.class)
                 .hasMessageContaining("자신의 요청을 수락할 수 없습니다.");
     }

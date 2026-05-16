@@ -13,8 +13,8 @@ public class RequestDetailResponseDto {
     private Long requestId;
     private String itemName;
     private String buildingName;
-    private String rewardAmt;
-    private String duration;
+    private Integer rewardAmt;
+    private Integer duration;
     private String memo;
     private RequestStatus status;
     private LocalDateTime createdAt;
@@ -23,7 +23,7 @@ public class RequestDetailResponseDto {
 
     public static RequestDetailResponseDto of(CallRequest callRequest) {
         return RequestDetailResponseDto.builder()
-                .requestId(callRequest.getRequestId())
+                .requestId(callRequest.getId())
                 .itemName(callRequest.getItemName())
                 .buildingName(callRequest.getBuildingName())
                 .rewardAmt(callRequest.getRewardAmt())

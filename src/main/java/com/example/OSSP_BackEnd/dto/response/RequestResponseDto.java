@@ -9,8 +9,8 @@ public record RequestResponseDto(
         Long requestId,
         String itemName,
         String buildingName,
-        String rewardAmt,
-        String duration,
+        Integer rewardAmt,
+        Integer duration,
         String memo,
         RequestStatus status,
         LocalDateTime createdAt,
@@ -20,7 +20,7 @@ public record RequestResponseDto(
 
     public static RequestResponseDto from(CallRequest request) {
         return new RequestResponseDto(
-                request.getRequestId(),
+                request.getId(),
                 request.getItemName(),
                 request.getBuildingName(),
                 request.getRewardAmt(),

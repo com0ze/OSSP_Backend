@@ -20,7 +20,7 @@ public class RequestListResponseDto {
 
     public static RequestListResponseDto of(CallRequest callRequest) {
         return RequestListResponseDto.builder()
-                .requestId(callRequest.getRequestId())
+                .requestId(callRequest.getId())
                 .itemName(callRequest.getItemName())
                 .buildingName(callRequest.getBuildingName())
                 .rewardAmt(callRequest.getRewardAmt())
