@@ -13,7 +13,7 @@ public class RequestListResponseDto {
     private Long requestId;
     private String itemName;
     private String buildingName;
-    private String rewardAmt;
+    private Integer rewardAmt;
     private RequestStatus status;
     private LocalDateTime createdAt;
     private String requesterNickname;
