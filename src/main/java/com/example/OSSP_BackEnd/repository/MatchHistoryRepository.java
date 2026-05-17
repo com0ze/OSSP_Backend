@@ -10,9 +10,9 @@ import java.util.Optional;
 @Repository
 public interface MatchHistoryRepository extends JpaRepository<MatchHistory, Long> {
 
-    @Query("SELECT mh FROM MatchHistory mh JOIN FETCH mh.request WHERE mh.request.requestId = :requestId")
+    @Query("SELECT mh FROM MatchHistory mh JOIN FETCH mh.request WHERE mh.request.id = :requestId")
     Optional<MatchHistory> findByRequestIdWithRequest(Long requestId);
 
     // 기존 메서드 유지
-    Optional<MatchHistory> findByRequest_RequestId(Long requestId);
+    Optional<MatchHistory> findByRequest_Id(Long requestId);
 }
