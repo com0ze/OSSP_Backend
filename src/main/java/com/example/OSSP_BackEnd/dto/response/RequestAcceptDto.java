@@ -18,7 +18,7 @@ public record RequestAcceptDto(
     public static RequestAcceptDto from(MatchHistory matchHistory) {
         return new RequestAcceptDto(
                 matchHistory.getMatchId(),
-                matchHistory.getRequest().getRequestId(),
+                matchHistory.getRequest().getId(),
                 matchHistory.getRequest().getStatus(),
                 matchHistory.getRequest().getRequester().getUserId(),
                 matchHistory.getProvider().getUserId(),
