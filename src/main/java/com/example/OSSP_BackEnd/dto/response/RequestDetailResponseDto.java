@@ -31,7 +31,7 @@ public class RequestDetailResponseDto {
                 .memo(callRequest.getMemo())
                 .status(callRequest.getStatus())
                 .createdAt(callRequest.getCreatedAt())
-                .requesterId(callRequest.getRequester().getUserId())
+                .requesterId(callRequest.getRequester().getId())
                 .requesterNickname(callRequest.getRequester().getNickname())
                 .build();
     }

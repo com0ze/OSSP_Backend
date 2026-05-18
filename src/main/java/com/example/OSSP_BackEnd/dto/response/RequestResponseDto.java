@@ -28,7 +28,7 @@ public record RequestResponseDto(
                 request.getMemo(),
                 request.getStatus(),
                 request.getCreatedAt(),
-                request.getRequester().getUserId(),
+                request.getRequester().getId(),
                 request.getRequester().getNickname()
         );
     }

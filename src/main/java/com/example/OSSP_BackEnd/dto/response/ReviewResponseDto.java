@@ -20,10 +20,10 @@ public class ReviewResponseDto {
 
     public static ReviewResponseDto of(UserReview userReview) {
         return ReviewResponseDto.builder()
-                .reviewId(userReview.getReviewId())
-                .matchId(userReview.getMatchHistory().getMatchId())
-                .reviewerId(userReview.getReviewer().getUserId())
-                .revieweeId(userReview.getReviewee().getUserId())
+                .reviewId(userReview.getId())
+                .matchId(userReview.getMatchHistory().getId())
+                .reviewerId(userReview.getReviewer().getId())
+                .revieweeId(userReview.getReviewee().getId())
                 .score(userReview.getScore())
                 .comments(userReview.getComments())
                 .createdAt(userReview.getCreatedAt())

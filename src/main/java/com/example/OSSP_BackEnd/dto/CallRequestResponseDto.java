@@ -39,7 +39,7 @@ public class CallRequestResponseDto {
                 .memo(callRequest.getMemo())
                 .status(callRequest.getStatus())
                 .createdAt(callRequest.getCreatedAt())
-                .requesterId(callRequest.getRequester().getUserId()) 
+                .requesterId(callRequest.getRequester().getId()) 
                 .build();
     }
 }

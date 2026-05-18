@@ -17,11 +17,11 @@ public record RequestAcceptDto(
 
     public static RequestAcceptDto from(MatchHistory matchHistory) {
         return new RequestAcceptDto(
-                matchHistory.getMatchId(),
+                matchHistory.getId(),
                 matchHistory.getRequest().getId(),
                 matchHistory.getRequest().getStatus(),
-                matchHistory.getRequest().getRequester().getUserId(),
-                matchHistory.getProvider().getUserId(),
+                matchHistory.getRequest().getRequester().getId(),
+                matchHistory.getProvider().getId(),
                 matchHistory.getProvider().getNickname(),
                 matchHistory.getMatchedAt()
         );
