@@ -67,7 +67,7 @@ private CallRequest createCallRequest(User requester, String itemName, RequestSt
         User provider = createUser("provider");
         CallRequest callRequest = createCallRequest(requester, "Item A", RequestStatus.WAITING);
 
-        RequestAcceptRequestDto dto = new RequestAcceptRequestDto(provider.getUserId());
+        RequestAcceptRequestDto dto = new RequestAcceptRequestDto(provider.getId());
 
         // When
         MatchHistory acceptedMatchHistory = callRequestService.acceptRequest(callRequest.getId(), dto);
@@ -75,7 +75,7 @@ private CallRequest createCallRequest(User requester, String itemName, RequestSt
         // Then
         CallRequest foundRequest = callRequestRepository.findById(callRequest.getId()).orElseThrow();
         assertThat(foundRequest.getStatus()).isEqualTo(RequestStatus.MATCHED);
-        assertThat(acceptedMatchHistory.getProvider().getUserId()).isEqualTo(provider.getUserId());
+        assertThat(acceptedMatchHistory.getProvider().getId()).isEqualTo(provider.getId());
         assertThat(acceptedMatchHistory.getRequest().getId()).isEqualTo(callRequest.getId());
     }
 
@@ -106,7 +106,7 @@ private CallRequest createCallRequest(User requester, String itemName, RequestSt
         User requester = createUser("requester");
         CallRequest callRequest = createCallRequest(requester, "Item C", RequestStatus.WAITING);
 
-        RequestAcceptRequestDto dto = new RequestAcceptRequestDto(requester.getUserId());
+        RequestAcceptRequestDto dto = new RequestAcceptRequestDto(requester.getId());
 
         // When & Then
         assertThatThrownBy(() -> callRequestService.acceptRequest(callRequest.getId(), dto))

@@ -16,7 +16,7 @@ public class CallRequest {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "request_id")
+    @Column(name = "id")
     private Long id;
 
     @Column(nullable = false, length = 100)

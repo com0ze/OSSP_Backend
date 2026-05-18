@@ -86,7 +86,7 @@ public class CallRequestService {
                 .orElseThrow(() -> new ResourceNotFoundException("제공자를 찾을 수 없습니다."));
 
         // [방어 로직 2] 본인이 호출한 글을 본인이 수락하는 행위 차단
-        if (callRequest.getRequester().getUserId().equals(provider.getUserId())) {
+        if (callRequest.getRequester().getId().equals(provider.getId())) {
             throw new SelfAcceptNotAllowedException("자신의 요청을 수락할 수 없습니다.");
         }
 
@@ -152,5 +152,22 @@ public class CallRequestService {
         matchHistoryRepository.save(matchHistory);
 
         return callRequestRepository.save(callRequest);
+    }
+
+    /*
+     내 대여 현황 조회 (type 파라미터로 진행 중/과거 내역 구분)
+     */
+    public List<CallRequest> getMyRequests(Long userId, String type) {
+        List<RequestStatus> statuses;
+        
+        if ("history".equalsIgnoreCase(type)) {
+            // 과거 내역: COMPLETED, CANCELED
+            statuses = List.of(RequestStatus.COMPLETED, RequestStatus.CANCELED);
+        } else {
+            // 진행 중 내역 (기본값): WAITING, MATCHED, IN_USE
+            statuses = List.of(RequestStatus.WAITING, RequestStatus.MATCHED, RequestStatus.IN_USE);
+        }
+        
+        return callRequestRepository.findByRequester_UserIdAndStatusInOrderByCreatedAtDesc(userId, statuses);
     }
 }

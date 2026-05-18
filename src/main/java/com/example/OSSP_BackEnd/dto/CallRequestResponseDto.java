@@ -24,7 +24,7 @@ public class CallRequestResponseDto {
     private Integer rewardAmt;
     private Integer duration;
     private String memo;
-    private RequestStatus status; // 💡 타입 수정: CallStatus -> RequestStatus
+    private RequestStatus status;
     private LocalDateTime createdAt;
     private Long requesterId;
 

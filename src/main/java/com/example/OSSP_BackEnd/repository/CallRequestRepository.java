@@ -36,4 +36,10 @@ public interface CallRequestRepository extends JpaRepository<CallRequest, Long> 
      */
     List<CallRequest> findAllByOrderByCreatedAtDesc();
     List<CallRequest> findByStatusOrderByCreatedAtDesc(RequestStatus status);
+
+    /*
+     특정 유저의 요청 중 상태 리스트에 포함되는 것들을 최신순으로 조회 (N+1 방지 패치 조인 적용)
+     */
+    @Query("SELECT cr FROM CallRequest cr JOIN FETCH cr.requester WHERE cr.requester.userId = :userId AND cr.status IN :statuses ORDER BY cr.createdAt DESC")
+    List<CallRequest> findByRequester_UserIdAndStatusInOrderByCreatedAtDesc(@Param("userId") Long userId, @Param("statuses") List<RequestStatus> statuses);
 }

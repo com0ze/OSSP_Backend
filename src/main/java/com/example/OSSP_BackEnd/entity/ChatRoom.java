@@ -27,8 +27,8 @@ public class ChatRoom {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "room_id")
-    private Long roomId;
+    @Column(name = "id")
+    private Long id;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)

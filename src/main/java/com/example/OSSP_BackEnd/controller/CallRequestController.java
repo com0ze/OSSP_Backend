@@ -49,6 +49,28 @@ public class CallRequestController {
     }
 
 
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<List<RequestListResponseDto>>> getMyRequests(
+            @RequestParam(required = false, defaultValue = "active") String type
+    ) {
+        // TODO: 시큐리티 인증 구현 후 실제 로그인한 유저 ID로 변경
+        Long currentUserId = 1L; // 임시 하드코딩
+        
+        List<RequestListResponseDto> requests = callRequestService.getMyRequests(currentUserId, type).stream()
+                .map(RequestListResponseDto::of)
+                .collect(Collectors.toList());
+        
+        String message = "active".equalsIgnoreCase(type) 
+                ? "진행 중인 대여 요청 목록을 성공적으로 조회했습니다."
+                : "과거 대여 요청 목록을 성공적으로 조회했습니다.";
+        
+        return ResponseEntity.ok(ApiResponse.success(
+                HttpStatus.OK,
+                message,
+                requests
+        ));
+    }
+
     @GetMapping("/nearby")
     public ResponseEntity<ApiResponse<List<RequestListResponseDto>>> getNearbyCallRequests() {
         // 💡 팀원의 서비스 메서드 구조에 맞추거나, 강현님이 짠 서비스 메서드를 호출하도록 연결해야 합니다.

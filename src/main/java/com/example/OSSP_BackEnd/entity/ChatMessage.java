@@ -28,8 +28,8 @@ public class ChatMessage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "message_id")
-    private Long messageId;
+    @Column(name = "id")
+    private Long id;
 
     @Lob
     @Column(name = "content", columnDefinition = "TEXT")
