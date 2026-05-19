@@ -1,5 +1,6 @@
 package com.example.OSSP_BackEnd.service;
 
+import com.example.OSSP_BackEnd.dto.chat.ChatMessageResponse;
 import com.example.OSSP_BackEnd.dto.chat.ChatRoomCreateRequest;
 import com.example.OSSP_BackEnd.dto.chat.ChatRoomListResponse;
 import com.example.OSSP_BackEnd.dto.chat.ChatRoomResponse;
@@ -12,6 +13,8 @@ import com.example.OSSP_BackEnd.repository.ChatMessageRepository;
 import com.example.OSSP_BackEnd.repository.ChatRoomRepository;
 import com.example.OSSP_BackEnd.repository.MatchHistoryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +33,29 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final MatchHistoryRepository matchHistoryRepository;
     private final ChatMessageRepository chatMessageRepository;
+
+    /**
+     * 특정 채팅방의 이전 메시지들을 페이징하여 조회합니다.
+     *
+     * @param roomId 메시지를 조회할 채팅방의 ID
+     * @param pageable 페이징 및 정렬 정보를 담은 객체
+     * @return 메시지 DTO들을 담은 Page 객체
+     */
+    public Page<ChatMessageResponse> getMessages(Long roomId, Pageable pageable) {
+        // 1. 채팅방 존재 여부를 확인합니다. 존재하지 않으면 예외를 발생시킵니다.
+        if (!chatRoomRepository.existsById(roomId)) {
+            throw new ResourceNotFoundException("ChatRoom not found with id: " + roomId);
+        }
+
+        // 2. Repository를 호출하여 메시지 데이터를 페이징하여 가져옵니다.
+        Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, pageable);
+
+        // 3. Entity Page를 DTO Page로 변환합니다.
+        //    Page.map() 메서드를 사용하면 페이징 정보(총 페이지 수, 현재 페이지 등)는 그대로 유지하면서
+        //    내부의 내용(List<ChatMessage>)만 변환(List<ChatMessageResponse>)할 수 있습니다.
+        return messages.map(ChatMessageResponse::from);
+    }
+
 
     /**
      * 채팅방 생성 로직

@@ -1,14 +1,20 @@
 package com.example.OSSP_BackEnd.controller;
 
+import com.example.OSSP_BackEnd.dto.chat.ChatMessageResponse;
 import com.example.OSSP_BackEnd.dto.chat.ChatRoomCreateRequest;
 import com.example.OSSP_BackEnd.dto.chat.ChatRoomListResponse;
 import com.example.OSSP_BackEnd.dto.chat.ChatRoomResponse;
 import com.example.OSSP_BackEnd.dto.response.ApiResponse;
 import com.example.OSSP_BackEnd.service.ChatService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +29,26 @@ import java.util.List;
 public class ChatController {
 
     private final ChatService chatService;
+
+    /**
+     * 특정 채팅방의 메시지 내역 페이징 조회 API
+     *
+     * @param roomId   메시지를 조회할 채팅방의 ID
+     * @param pageable 페이징 및 정렬 정보 (기본값: 생성일시(createdAt) 기준 내림차순)
+     * @return 메시지 목록과 페이징 정보를 담은 응답
+     */
+    @GetMapping("/{roomId}/messages")
+    public ResponseEntity<ApiResponse<List<ChatMessageResponse>>> getChatMessages(
+            @PathVariable Long roomId,
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        // 서비스에서 Page 객체를 받습니다.
+        Page<ChatMessageResponse> messagePage = chatService.getMessages(roomId, pageable);
+        // Page 객체에서 실제 데이터인 List만 추출하여 응답합니다.
+        List<ChatMessageResponse> messages = messagePage.getContent();
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, "채팅 메시지 목록을 성공적으로 조회했습니다.", messages));
+    }
+
 
     /**
      * 채팅방 생성 API (POST /api/v1/chats)

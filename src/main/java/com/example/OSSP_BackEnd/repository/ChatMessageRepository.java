@@ -1,6 +1,8 @@
 package com.example.OSSP_BackEnd.repository;
 
 import com.example.OSSP_BackEnd.entity.ChatMessage;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -8,6 +10,17 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
+
+    /**
+     * 특정 채팅방의 메시지들을 페이징하여 조회합니다.
+     * Spring Data JPA의 쿼리 메서드 기능을 활용하여 `chatRoom` 객체의 `id` 필드를 기준으로 메시지를 찾고,
+     * `Pageable` 파라미터를 통해 페이징 및 정렬(예: 최신순)을 적용합니다.
+     *
+     * @param roomId 페이징 조회를 수행할 채팅방의 ID
+     * @param pageable 페이징 및 정렬 정보를 담은 객체
+     * @return 지정된 채팅방의 메시지들을 담은 `Page` 객체
+     */
+    Page<ChatMessage> findByChatRoomId(Long roomId, Pageable pageable);
 
     /**
      * 여러 채팅방의 마지막 메시지를 한 번의 쿼리로 조회합니다.
