@@ -25,7 +25,7 @@ public class MatchHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "match_id")
-    private Long id;
+    private Long matchId;
 
     @Column(name = "matched_at")
     private LocalDateTime matchedAt;

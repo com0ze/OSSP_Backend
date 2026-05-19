@@ -21,7 +21,7 @@ public class ChatRoom {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "room_id")
-    private Long id;
+    private Long roomId;
 
     /**
      * ChatRoom과 MatchHistory의 연관 관계 설정입니다.
