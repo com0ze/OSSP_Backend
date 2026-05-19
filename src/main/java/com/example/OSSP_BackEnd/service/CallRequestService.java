@@ -168,6 +168,6 @@ public class CallRequestService {
             statuses = List.of(RequestStatus.WAITING, RequestStatus.MATCHED, RequestStatus.IN_USE);
         }
         
-        return callRequestRepository.findByRequester_UserIdAndStatusInOrderByCreatedAtDesc(userId, statuses);
+        return callRequestRepository.findByRequester_IdAndStatusInOrderByCreatedAtDesc(userId, statuses);
     }
 }
