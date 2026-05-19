@@ -52,8 +52,8 @@ public class ChatService {
 
         // 4. 저장된 ChatRoom 정보를 바탕으로 응답 DTO를 생성하여 반환합니다.
         return new ChatRoomResponse(
-                savedChatRoom.getRoomId(),
-                savedChatRoom.getMatchHistory().getMatchId(),
+                savedChatRoom.getId(),
+                savedChatRoom.getMatchHistory().getId(),
                 savedChatRoom.getCreatedAt()
         );
     }
@@ -74,7 +74,7 @@ public class ChatService {
 
         // 2. 조회된 채팅방들의 ID 목록을 추출합니다.
         List<Long> roomIds = chatRooms.stream()
-                .map(ChatRoom::getRoomId)
+                .map(ChatRoom::getId)
                 .toList();
 
         // 3. 각 채팅방의 마지막 메시지를 한 번의 쿼리로 가져옵니다. (성능 최적화)
@@ -82,7 +82,7 @@ public class ChatService {
 
         // 4. 메시지 목록을 채팅방 ID를 Key로 하는 Map으로 변환합니다. (O(1) 시간 복잡도로 조회를 위함)
         Map<Long, ChatMessage> lastMessageMap = lastMessages.stream()
-                .collect(Collectors.toMap(message -> message.getChatRoom().getRoomId(), Function.identity()));
+                .collect(Collectors.toMap(message -> message.getChatRoom().getId(), Function.identity()));
 
         // 5. 채팅방 목록을 순회하며 최종 응답 DTO(ChatRoomListResponse)를 생성합니다.
         return chatRooms.stream()
@@ -95,10 +95,10 @@ public class ChatService {
 
                     // 5-2. 채팅 상대방을 판별합니다.
                     // 현재 사용자가 요청자(requester)이면, 상대방은 공급자(provider)입니다. 그 반대도 마찬가지입니다.
-                    User opponent = requester.getUserId().equals(userId) ? provider : requester;
+                    User opponent = requester.getId().equals(userId) ? provider : requester;
 
                     // 5-3. Map에서 현재 채팅방의 마지막 메시지를 찾습니다.
-                    ChatMessage lastMessageEntity = lastMessageMap.get(chatRoom.getRoomId());
+                    ChatMessage lastMessageEntity = lastMessageMap.get(chatRoom.getId());
                     String lastMessageContent = "아직 대화가 없습니다.";
                     LocalDateTime updatedAt = null;
 
@@ -109,10 +109,10 @@ public class ChatService {
 
                     // 5-4. 최종 응답 DTO를 구성하여 반환합니다.
                     return new ChatRoomListResponse(
-                            callRequest.getRequestId(),
-                            matchHistory.getMatchId(),
-                            chatRoom.getRoomId(),
-                            opponent.getUserId(),
+                            callRequest.getId(),
+                            matchHistory.getId(),
+                            chatRoom.getId(),
+                            opponent.getId(),
                             opponent.getNickname(),
                             lastMessageContent,
                             updatedAt
