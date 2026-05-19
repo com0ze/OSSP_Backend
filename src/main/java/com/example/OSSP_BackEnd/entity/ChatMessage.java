@@ -20,8 +20,8 @@ public class ChatMessage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "message_id")
-    private Long messageId;
+    @Column(name = "id")
+    private Long id;
 
     /**
      * ChatMessage는 특정 ChatRoom에 속하므로 ManyToOne 관계를 설정합니다.
