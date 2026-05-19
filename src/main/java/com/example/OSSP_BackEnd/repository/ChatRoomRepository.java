@@ -17,11 +17,11 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
      * @param userId 현재 로그인한 사용자의 ID
      * @return 사용자가 참여한 채팅방 엔티티 목록
      */
-    @Query("SELECT cr FROM ChatRoom cr " +
+    @Query("SELECT DISTINCT cr FROM ChatRoom cr " +
             "JOIN FETCH cr.matchHistory mh " +
             "JOIN FETCH mh.request crq " +
             "JOIN FETCH crq.requester req " +
             "JOIN FETCH mh.provider p " +
-            "WHERE req.userId = :userId OR p.userId = :userId")
+            "WHERE cr.id IN (SELECT DISTINCT cr2.id FROM ChatRoom cr2 JOIN cr2.matchHistory mh2 JOIN mh2.request crq2 WHERE crq2.requester.id = :userId OR mh2.provider.id = :userId)")
     List<ChatRoom> findAllByUserId(@Param("userId") Long userId);
 }
