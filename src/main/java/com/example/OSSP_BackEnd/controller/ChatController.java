@@ -1,5 +1,6 @@
 package com.example.OSSP_BackEnd.controller;
 
+import com.example.OSSP_BackEnd.dto.chat.ChatMessageRequest;
 import com.example.OSSP_BackEnd.dto.chat.ChatMessageResponse;
 import com.example.OSSP_BackEnd.dto.chat.ChatRoomCreateRequest;
 import com.example.OSSP_BackEnd.dto.chat.ChatRoomListResponse;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,6 +31,17 @@ import java.util.List;
 public class ChatController {
 
     private final ChatService chatService;
+
+    /**
+     * WebSocket을 통해 들어오는 메시지를 처리합니다.
+     * 클라이언트는 "/app/chat.send" 경로로 메시지를 전송(publish)합니다.
+     *
+     * @param messageRequest 클라이언트가 보낸 채팅 메시지 데이터 (roomId, senderId, content)
+     */
+    @MessageMapping("/chat.send")
+    public void sendMessage(ChatMessageRequest messageRequest) {
+        chatService.sendMessage(messageRequest);
+    }
 
     /**
      * 특정 채팅방의 메시지 내역 페이징 조회 API

@@ -1,5 +1,6 @@
 package com.example.OSSP_BackEnd.service;
 
+import com.example.OSSP_BackEnd.dto.chat.ChatMessageRequest;
 import com.example.OSSP_BackEnd.dto.chat.ChatMessageResponse;
 import com.example.OSSP_BackEnd.dto.chat.ChatRoomCreateRequest;
 import com.example.OSSP_BackEnd.dto.chat.ChatRoomListResponse;
@@ -12,9 +13,11 @@ import com.example.OSSP_BackEnd.exception.ResourceNotFoundException;
 import com.example.OSSP_BackEnd.repository.ChatMessageRepository;
 import com.example.OSSP_BackEnd.repository.ChatRoomRepository;
 import com.example.OSSP_BackEnd.repository.MatchHistoryRepository;
+import com.example.OSSP_BackEnd.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +36,42 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final MatchHistoryRepository matchHistoryRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate; // WebSocket 메시지 전송을 위한 템플릿
+
+    /**
+     * 클라이언트로부터 받은 채팅 메시지를 처리합니다.
+     * 메시지를 DB에 저장하고, 해당 채팅방을 구독하는 클라이언트들에게 메시지를 브로드캐스팅합니다.
+     *
+     * @param messageRequest 클라이언트가 보낸 메시지 데이터
+     */
+    @Transactional
+    public void sendMessage(ChatMessageRequest messageRequest) {
+        // 1. senderId로 User 엔티티를 조회합니다.
+        User sender = userRepository.findById(messageRequest.getSenderId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + messageRequest.getSenderId()));
+
+        // 2. roomId로 ChatRoom 엔티티를 조회합니다.
+        ChatRoom chatRoom = chatRoomRepository.findById(messageRequest.getRoomId())
+                .orElseThrow(() -> new ResourceNotFoundException("ChatRoom not found with id: " + messageRequest.getRoomId()));
+
+        // 3. ChatMessage 엔티티를 생성하고 DB에 저장합니다.
+        ChatMessage chatMessage = ChatMessage.builder()
+                .chatRoom(chatRoom)
+                .sender(sender)
+                .content(messageRequest.getContent())
+                .build();
+        ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
+
+        // 4. 메시지를 DTO로 변환합니다.
+        ChatMessageResponse messageResponse = ChatMessageResponse.from(savedMessage);
+
+        // 5. SimpMessagingTemplate을 사용하여 WebSocket 토픽으로 메시지를 전송합니다.
+        //    - 목적지(destination): "/topic/rooms/{roomId}"
+        //    - 구독하고 있는 클라이언트들은 이 메시지를 수신하게 됩니다.
+        messagingTemplate.convertAndSend("/topic/rooms/" + messageRequest.getRoomId(), messageResponse);
+    }
+
 
     /**
      * 특정 채팅방의 이전 메시지들을 페이징하여 조회합니다.
