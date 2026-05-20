@@ -38,3 +38,4 @@ out/
 
 ### DB Configuration ###
 src/main/resources/application.properties
+src/main/resources/firebase-service-key.json
