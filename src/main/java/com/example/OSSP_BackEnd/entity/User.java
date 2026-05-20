@@ -37,6 +37,15 @@ public class User {
     @Column(name = "is_on_duty")
     private Boolean isOnDuty;
 
+    @Column(name = "current_building", length = 50)
+    private String currentBuilding;
+
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -47,5 +56,17 @@ public class User {
         this.password = password;
         this.mannerScore = BigDecimal.valueOf(0.0);
         this.isOnDuty = false;
+    }
+
+    // 위치 정보 업데이트 메서드
+    public void updateLocation(Double latitude, Double longitude, String currentBuilding) {
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.currentBuilding = currentBuilding;
+    }
+
+    // userId 편의 메서드
+    public Long getUserId() {
+        return this.id;
     }
 }
