@@ -35,7 +35,6 @@ public interface CallRequestRepository extends JpaRepository<CallRequest, Long> 
     에넘 타입을 RequestStatus로 일치화
      */
     List<CallRequest> findAllByOrderByCreatedAtDesc();
-    List<CallRequest> findByStatusOrderByCreatedAtDesc(RequestStatus status);
 
     /*
      특정 유저의 요청 중 상태 리스트에 포함되는 것들을 최신순으로 조회 (N+1 방지 패치 조인 적용)
