@@ -17,24 +17,24 @@ public class UserService {
     private final UserRepository userRepository;
 
     /**
-     * 유저 위치 정보 갱신
-     * Ray-Casting 알고리즘을 사용하여 건물 내부 여부 판단
+     * 유저 위치 정보 갱신 (경량화 버전)
+     * 프론트엔드에서 지오펜싱 처리 후 건물명만 받아서 저장
      * 
      * @param userId 사용자 ID
-     * @param dto 위치 정보 (위도, 경도)
+     * @param dto 건물 정보
      */
     @Transactional
     public void updateLocation(Long userId, LocationUpdateRequestDto dto) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
 
-        // Building Enum의 findByCoordinate를 활용하여 건물 찾기
-        Building building = Building.findByCoordinate(dto.latitude(), dto.longitude());
-
-        // 건물이 발견되면 해당 건물 이름, 아니면 "OUTSIDE"로 설정
+        // 건물명을 Building Enum으로 변환하여 유효성 검증
+        Building building = Building.fromString(dto.currentBuilding());
+        
+        // 유효한 건물인 경우 Enum 상수명을 저장, 그렇지 않으면 "OUTSIDE" 저장
         String buildingName = (building != null) ? building.name() : "OUTSIDE";
 
-        // User 엔티티의 위치 정보 업데이트
-        user.updateLocation(dto.latitude(), dto.longitude(), buildingName);
+        // User 엔티티의 건물 정보 업데이트
+        user.updateCurrentBuilding(buildingName);
     }
 }

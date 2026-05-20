@@ -40,12 +40,6 @@ public class User {
     @Column(name = "current_building", length = 50)
     private String currentBuilding;
 
-    @Column(name = "latitude")
-    private Double latitude;
-
-    @Column(name = "longitude")
-    private Double longitude;
-
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -58,10 +52,8 @@ public class User {
         this.isOnDuty = false;
     }
 
-    // 위치 정보 업데이트 메서드
-    public void updateLocation(Double latitude, Double longitude, String currentBuilding) {
-        this.latitude = latitude;
-        this.longitude = longitude;
+    // 건물 정보 업데이트 메서드 (경량화 버전)
+    public void updateCurrentBuilding(String currentBuilding) {
         this.currentBuilding = currentBuilding;
     }
 
