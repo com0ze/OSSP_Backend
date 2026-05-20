@@ -1,5 +1,6 @@
 package com.example.OSSP_BackEnd.service;
 
+import com.example.OSSP_BackEnd.dto.request.DeviceTokenRequestDto;
 import com.example.OSSP_BackEnd.dto.request.LocationUpdateRequestDto;
 import com.example.OSSP_BackEnd.entity.Building;
 import com.example.OSSP_BackEnd.entity.User;
@@ -36,5 +37,20 @@ public class UserService {
 
         // User 엔티티의 건물 정보 업데이트
         user.updateCurrentBuilding(buildingName);
+    }
+
+    /**
+     * FCM 기기 토큰 등록/갱신
+     * 
+     * @param userId 사용자 ID
+     * @param dto FCM 토큰 정보
+     */
+    @Transactional
+    public void updateDeviceToken(Long userId, DeviceTokenRequestDto dto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
+
+        // User 엔티티의 FCM 토큰 업데이트
+        user.updateDeviceToken(dto.fcmToken());
     }
 }

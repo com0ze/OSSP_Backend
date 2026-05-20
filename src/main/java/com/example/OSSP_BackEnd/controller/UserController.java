@@ -1,5 +1,6 @@
 package com.example.OSSP_BackEnd.controller;
 
+import com.example.OSSP_BackEnd.dto.request.DeviceTokenRequestDto;
 import com.example.OSSP_BackEnd.dto.request.LocationUpdateRequestDto;
 import com.example.OSSP_BackEnd.dto.response.ApiResponse;
 import com.example.OSSP_BackEnd.service.UserService;
@@ -18,7 +19,7 @@ public class UserController {
 
     /**
      * 유저 위치 정보 갱신 API
-     * Ray-Casting 알고리즘으로 건물 내부 여부 판별
+     * 프론트엔드에서 지오펜싱 처리 후 건물명 전달
      * 
      * PATCH /api/v1/users/location
      */
@@ -33,6 +34,26 @@ public class UserController {
 
         return ResponseEntity.ok(
                 ApiResponse.success(HttpStatus.OK, "위치 정보가 성공적으로 갱신되었습니다.")
+        );
+    }
+
+    /**
+     * FCM 기기 토큰 등록 API
+     * 푸시 알림을 위한 기기 토큰 저장
+     * 
+     * PATCH /api/v1/users/me/device-token
+     */
+    @PatchMapping("/me/device-token")
+    public ResponseEntity<ApiResponse<Void>> updateDeviceToken(
+            @Valid @RequestBody DeviceTokenRequestDto dto
+    ) {
+        // TODO: 시큐리티 인증 구현 후 실제 로그인한 유저 ID로 변경
+        Long currentUserId = 1L; // 임시 하드코딩
+
+        userService.updateDeviceToken(currentUserId, dto);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(HttpStatus.OK, "기기 토큰이 성공적으로 등록되었습니다.")
         );
     }
 }

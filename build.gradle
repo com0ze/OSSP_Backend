@@ -30,6 +30,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
+    // Firebase Admin SDK (FCM 용도)
+    implementation 'com.google.firebase:firebase-admin:9.2.0'
+
     // 3. Security (⚠️ 강현님의 포스트맨 테스트를 위해 현재는 주석 처리 유지, 회원가입/로그인 구현 시 해제)
     // implementation 'org.springframework.boot:spring-boot-starter-security'
 
