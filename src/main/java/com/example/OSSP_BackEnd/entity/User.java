@@ -19,7 +19,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_id")
+    @Column(name = "id")
     private Long id;
 
     @Column(name = "email", length = 255)
@@ -40,6 +40,9 @@ public class User {
     @Column(name = "current_building", length = 50)
     private String currentBuilding;
 
+    @Column(name = "device_token", length = 255)
+    private String deviceToken;
+
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -55,6 +58,11 @@ public class User {
     // 건물 정보 업데이트 메서드 (경량화 버전)
     public void updateCurrentBuilding(String currentBuilding) {
         this.currentBuilding = currentBuilding;
+    }
+
+    // FCM 기기 토큰 업데이트 메서드
+    public void updateDeviceToken(String fcmToken) {
+        this.deviceToken = fcmToken;
     }
 
     // userId 편의 메서드
