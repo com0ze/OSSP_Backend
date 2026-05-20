@@ -37,6 +37,9 @@ public class User {
     @Column(name = "is_on_duty")
     private Boolean isOnDuty;
 
+    @Column(name = "current_building", length = 50)
+    private String currentBuilding;
+
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -47,5 +50,15 @@ public class User {
         this.password = password;
         this.mannerScore = BigDecimal.valueOf(0.0);
         this.isOnDuty = false;
+    }
+
+    // 건물 정보 업데이트 메서드 (경량화 버전)
+    public void updateCurrentBuilding(String currentBuilding) {
+        this.currentBuilding = currentBuilding;
+    }
+
+    // userId 편의 메서드
+    public Long getUserId() {
+        return this.id;
     }
 }
