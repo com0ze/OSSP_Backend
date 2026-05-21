@@ -67,9 +67,14 @@ public class User {
         this.deviceToken = fcmToken;
     }
 
+
     // 매너 점수 업데이트 메서드
     public void updateMannerScore(BigDecimal mannerScore) {
         this.mannerScore = mannerScore;
+
+    // 알림 받기 ON/OFF 상태 업데이트 메서드
+    public void updateDutyStatus(Boolean isOnDuty) {
+        this.isOnDuty = isOnDuty;
     }
 
     // userId 편의 메서드
