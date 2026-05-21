@@ -1,6 +1,7 @@
 package com.example.OSSP_BackEnd.controller;
 
 import com.example.OSSP_BackEnd.dto.request.DeviceTokenRequestDto;
+import com.example.OSSP_BackEnd.dto.request.DutyUpdateRequestDto;
 import com.example.OSSP_BackEnd.dto.request.LocationUpdateRequestDto;
 import com.example.OSSP_BackEnd.dto.response.ApiResponse;
 import com.example.OSSP_BackEnd.service.UserService;
@@ -54,6 +55,26 @@ public class UserController {
 
         return ResponseEntity.ok(
                 ApiResponse.success(HttpStatus.OK, "기기 토큰이 성공적으로 등록되었습니다.")
+        );
+    }
+
+    /**
+     * 알림 받기 ON/OFF 변경 API
+     * 대여 요청 알림 수신 여부 설정
+     * 
+     * PATCH /api/v1/users/me/duty
+     */
+    @PatchMapping("/me/duty")
+    public ResponseEntity<ApiResponse<Void>> updateDutyStatus(
+            @Valid @RequestBody DutyUpdateRequestDto dto
+    ) {
+        // TODO: 시큐리티 인증 구현 후 실제 로그인한 유저 ID로 변경
+        Long currentUserId = 1L; // 임시 하드코딩
+
+        userService.updateDutyStatus(currentUserId, dto);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(HttpStatus.OK, "알림 받기 설정이 성공적으로 변경되었습니다.")
         );
     }
 }

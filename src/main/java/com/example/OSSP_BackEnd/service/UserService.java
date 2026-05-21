@@ -1,6 +1,7 @@
 package com.example.OSSP_BackEnd.service;
 
 import com.example.OSSP_BackEnd.dto.request.DeviceTokenRequestDto;
+import com.example.OSSP_BackEnd.dto.request.DutyUpdateRequestDto;
 import com.example.OSSP_BackEnd.dto.request.LocationUpdateRequestDto;
 import com.example.OSSP_BackEnd.entity.Building;
 import com.example.OSSP_BackEnd.entity.User;
@@ -52,5 +53,20 @@ public class UserService {
 
         // User 엔티티의 FCM 토큰 업데이트
         user.updateDeviceToken(dto.fcmToken());
+    }
+
+    /**
+     * 알림 받기 ON/OFF 상태 변경
+     * 
+     * @param userId 사용자 ID
+     * @param dto 알림 받기 설정 정보
+     */
+    @Transactional
+    public void updateDutyStatus(Long userId, DutyUpdateRequestDto dto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
+
+        // User 엔티티의 알림 받기 상태 업데이트
+        user.updateDutyStatus(dto.isOnDuty());
     }
 }
