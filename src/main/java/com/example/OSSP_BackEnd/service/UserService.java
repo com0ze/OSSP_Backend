@@ -3,6 +3,7 @@ package com.example.OSSP_BackEnd.service;
 import com.example.OSSP_BackEnd.dto.request.DeviceTokenRequestDto;
 import com.example.OSSP_BackEnd.dto.request.DutyUpdateRequestDto;
 import com.example.OSSP_BackEnd.dto.request.LocationUpdateRequestDto;
+import com.example.OSSP_BackEnd.dto.response.UserProfileResponseDto;
 import com.example.OSSP_BackEnd.entity.Building;
 import com.example.OSSP_BackEnd.entity.User;
 import com.example.OSSP_BackEnd.exception.ResourceNotFoundException;
@@ -68,5 +69,19 @@ public class UserService {
 
         // User 엔티티의 알림 받기 상태 업데이트
         user.updateDutyStatus(dto.isOnDuty());
+    }
+
+    /**
+     * 특정 유저 프로필 조회
+     * 민감한 정보(password, deviceToken)는 제외하고 안전한 정보만 반환
+     * 
+     * @param userId 조회할 사용자 ID
+     * @return UserProfileResponseDto 유저 프로필 정보
+     */
+    public UserProfileResponseDto getUserProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
+
+        return UserProfileResponseDto.from(user);
     }
 }
