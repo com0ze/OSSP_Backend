@@ -4,12 +4,15 @@ import com.example.OSSP_BackEnd.dto.request.DeviceTokenRequestDto;
 import com.example.OSSP_BackEnd.dto.request.DutyUpdateRequestDto;
 import com.example.OSSP_BackEnd.dto.request.LocationUpdateRequestDto;
 import com.example.OSSP_BackEnd.dto.response.ApiResponse;
+import com.example.OSSP_BackEnd.dto.response.MyProfileResponseDto; // 추가: 내 프로필 응답 DTO
 import com.example.OSSP_BackEnd.dto.response.UserProfileResponseDto;
 import com.example.OSSP_BackEnd.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+//import org.springframework.security.core.Authentication; // 추가: SecurityContextHolder 사용을 위한 import
+//import org.springframework.security.core.context.SecurityContextHolder; // 추가: SecurityContextHolder 사용을 위한 import
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -94,6 +97,33 @@ public class UserController {
 
         return ResponseEntity.ok(
                 ApiResponse.success(HttpStatus.OK, "유저 프로필을 성공적으로 조회했습니다.", profile)
+        );
+    }
+
+    /**
+     * [GET] /api/v1/users/me
+     * 현재 로그인한 사용자의 프로필 정보(닉네임, 매너 점수)를 조회하는 API
+     * HTTP Header에 사용자 인증 토큰(Authorization: Bearer {token})이 포함되어야 합니다.
+     *
+     * @return ResponseEntity<ApiResponse<MyProfileResponseDto>> 현재 로그인한 사용자의 프로필 정보
+     */
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<MyProfileResponseDto>> getMyProfile() {
+        // Spring Security의 SecurityContextHolder에서 현재 인증된 사용자 정보를 가져옵니다.
+        // Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        // 인증 객체로부터 사용자 ID를 추출합니다.
+        // 여기서는 principal이 String 타입의 userId라고 가정하며, 실제 구현에 따라 CustomUserDetails 등으로 변경될 수 있습니다.
+        //Long currentUserId = Long.valueOf(authentication.getName());
+        // TODO: 시큐리티 인증 구현 후 실제 로그인한 유저 ID로 변경
+        Long currentUserId = 1L; // 임시 하드코딩
+
+        // UserService를 통해 현재 로그인한 사용자의 프로필 정보를 조회합니다.
+        MyProfileResponseDto myProfile = userService.getMyProfile(currentUserId);
+
+        // API 응답 규격에 맞춰 성공 응답을 반환합니다.
+        return ResponseEntity.ok(
+                ApiResponse.success(HttpStatus.OK, "내 프로필 정보를 성공적으로 조회했습니다.", myProfile)
         );
     }
 }

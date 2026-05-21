@@ -4,6 +4,7 @@ import com.example.OSSP_BackEnd.dto.request.DeviceTokenRequestDto;
 import com.example.OSSP_BackEnd.dto.request.DutyUpdateRequestDto;
 import com.example.OSSP_BackEnd.dto.request.LocationUpdateRequestDto;
 import com.example.OSSP_BackEnd.dto.response.UserProfileResponseDto;
+import com.example.OSSP_BackEnd.dto.response.MyProfileResponseDto;
 import com.example.OSSP_BackEnd.entity.Building;
 import com.example.OSSP_BackEnd.entity.User;
 import com.example.OSSP_BackEnd.exception.ResourceNotFoundException;
@@ -84,4 +85,19 @@ public class UserService {
 
         return UserProfileResponseDto.from(user);
     }
+
+    /**
+     * 현재 로그인한 사용자의 프로필 정보 조회
+     * API 명세에 따라 닉네임과 매너 점수만 반환합니다.
+     *
+     * @param userId 현재 로그인한 사용자 ID
+     * @return MyProfileResponseDto 현재 사용자의 닉네임과 매너 점수 정보
+     */
+    public MyProfileResponseDto getMyProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("현재 로그인한 사용자를 찾을 수 없습니다.")); // 예외 메시지 구체화
+
+        return MyProfileResponseDto.from(user);
+    }
 }
+
