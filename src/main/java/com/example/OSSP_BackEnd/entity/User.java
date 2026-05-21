@@ -21,7 +21,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_id")
+    @Column(name = "id")
     private Long id;
 
     @Column(name = "email", length = 255)
@@ -67,17 +67,17 @@ public class User {
         this.deviceToken = fcmToken;
     }
 
-
     // 매너 점수 업데이트 메서드
     public void updateMannerScore(BigDecimal mannerScore) {
         this.mannerScore = mannerScore;
+    } // 💡 이 닫는 괄호가 빠져 있었습니다!
 
     // 알림 받기 ON/OFF 상태 업데이트 메서드
     public void updateDutyStatus(Boolean isOnDuty) {
         this.isOnDuty = isOnDuty;
     }
 
-    // userId 편의 메서드
+    // userId 편의 메서드 (다른 팀원 코드가 깨지지 않게 방어)
     public Long getUserId() {
         return this.id;
     }
