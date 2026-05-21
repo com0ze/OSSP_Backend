@@ -4,6 +4,7 @@ import com.example.OSSP_BackEnd.dto.request.DeviceTokenRequestDto;
 import com.example.OSSP_BackEnd.dto.request.DutyUpdateRequestDto;
 import com.example.OSSP_BackEnd.dto.request.LocationUpdateRequestDto;
 import com.example.OSSP_BackEnd.dto.response.ApiResponse;
+import com.example.OSSP_BackEnd.dto.response.UserProfileResponseDto;
 import com.example.OSSP_BackEnd.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -75,6 +76,24 @@ public class UserController {
 
         return ResponseEntity.ok(
                 ApiResponse.success(HttpStatus.OK, "알림 받기 설정이 성공적으로 변경되었습니다.")
+        );
+    }
+
+    /**
+     * 특정 유저 프로필 조회 API
+     * 대기열 목록에서 유저를 클릭했을 때 상세 정보 반환
+     * 민감한 정보는 제외하고 안전한 정보만 반환
+     * 
+     * GET /api/v1/users/{userId}
+     */
+    @GetMapping("/{userId}")
+    public ResponseEntity<ApiResponse<UserProfileResponseDto>> getUserProfile(
+            @PathVariable Long userId
+    ) {
+        UserProfileResponseDto profile = userService.getUserProfile(userId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(HttpStatus.OK, "유저 프로필을 성공적으로 조회했습니다.", profile)
         );
     }
 }
