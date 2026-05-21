@@ -3,6 +3,7 @@ package com.example.OSSP_BackEnd.entity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)
@@ -19,7 +21,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
+    @Column(name = "user_id")
     private Long id;
 
     @Column(name = "email", length = 255)
@@ -64,6 +66,11 @@ public class User {
     public void updateDeviceToken(String fcmToken) {
         this.deviceToken = fcmToken;
     }
+
+
+    // 매너 점수 업데이트 메서드
+    public void updateMannerScore(BigDecimal mannerScore) {
+        this.mannerScore = mannerScore;
 
     // 알림 받기 ON/OFF 상태 업데이트 메서드
     public void updateDutyStatus(Boolean isOnDuty) {

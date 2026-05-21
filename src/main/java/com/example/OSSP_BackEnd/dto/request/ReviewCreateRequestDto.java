@@ -1,20 +1,21 @@
 package com.example.OSSP_BackEnd.dto.request;
 
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
 @Getter
+@NoArgsConstructor
+@AllArgsConstructor
 public class ReviewCreateRequestDto {
     @NotNull(message = "매칭 ID는 필수입니다.")
     private Long matchId;
-
-    @NotNull(message = "평가하는 사용자 ID는 필수입니다.")
-    private Long reviewerId;
 
     @NotNull(message = "점수는 필수입니다.")
     @DecimalMin(value = "0.0", message = "점수는 0.0 이상이어야 합니다.")
