@@ -65,6 +65,11 @@ public class User {
         this.deviceToken = fcmToken;
     }
 
+    // 알림 받기 ON/OFF 상태 업데이트 메서드
+    public void updateDutyStatus(Boolean isOnDuty) {
+        this.isOnDuty = isOnDuty;
+    }
+
     // userId 편의 메서드
     public Long getUserId() {
         return this.id;
