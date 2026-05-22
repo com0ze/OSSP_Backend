@@ -88,11 +88,13 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.success(400, message, null));
     }
 
-    /*
+/*
     최후의 보루: 위에서 걸러지지 않은 시스템 내부의 모든 500 에러 처리
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleAnyException(Exception ex) {
+        ex.printStackTrace(); 
+        
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.success(500, "서버 처리 중 오류가 발생했습니다.", null));
     }
