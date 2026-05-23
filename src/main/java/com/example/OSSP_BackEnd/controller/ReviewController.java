@@ -3,12 +3,15 @@ package com.example.OSSP_BackEnd.controller;
 import com.example.OSSP_BackEnd.dto.request.ReviewCreateRequestDto;
 import com.example.OSSP_BackEnd.dto.response.ApiResponse;
 import com.example.OSSP_BackEnd.dto.response.ReviewResponseDto;
+import com.example.OSSP_BackEnd.security.CustomUserDetails; // CustomUserDetails import 추가
 import com.example.OSSP_BackEnd.entity.UserReview;
 import com.example.OSSP_BackEnd.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,7 +34,10 @@ public class ReviewController {
         // TODO: Spring Security 도입 시, Principal 객체나 @AuthenticationPrincipal을 통해 현재 로그인한 사용자 ID를 가져와야 합니다.
         // 예: UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         // Long reviewerId = ((CustomUserDetails) userDetails).getId();
-        Long reviewerId = 1L; // 임시로 사용하는 하드코딩된 사용자 ID
+        // Long reviewerId = 1L; // 임시로 사용하는 하드코딩된 사용자 ID
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        Long reviewerId = userDetails.getId();
 
         reviewService.createReview(dto, reviewerId);
 
@@ -41,5 +47,4 @@ public class ReviewController {
                 "리뷰가 성공적으로 등록되었습니다."
         ));
     }
-    }
-
+}

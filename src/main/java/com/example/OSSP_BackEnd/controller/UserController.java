@@ -6,13 +6,14 @@ import com.example.OSSP_BackEnd.dto.request.LocationUpdateRequestDto;
 import com.example.OSSP_BackEnd.dto.response.ApiResponse;
 import com.example.OSSP_BackEnd.dto.response.MyProfileResponseDto; // 추가: 내 프로필 응답 DTO
 import com.example.OSSP_BackEnd.dto.response.UserProfileResponseDto;
+import com.example.OSSP_BackEnd.security.CustomUserDetails; // CustomUserDetails import 추가
 import com.example.OSSP_BackEnd.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-//import org.springframework.security.core.Authentication; // 추가: SecurityContextHolder 사용을 위한 import
-//import org.springframework.security.core.context.SecurityContextHolder; // 추가: SecurityContextHolder 사용을 위한 import
+import org.springframework.security.core.Authentication; // 추가: SecurityContextHolder 사용을 위한 import
+import org.springframework.security.core.context.SecurityContextHolder; // 추가: SecurityContextHolder 사용을 위한 import
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,7 +26,7 @@ public class UserController {
     /**
      * 유저 위치 정보 갱신 API
      * 프론트엔드에서 지오펜싱 처리 후 건물명 전달
-     * 
+     *
      * PATCH /api/v1/users/location
      */
     @PatchMapping("/location")
@@ -33,7 +34,11 @@ public class UserController {
             @Valid @RequestBody LocationUpdateRequestDto dto
     ) {
         // TODO: 시큐리티 인증 구현 후 실제 로그인한 유저 ID로 변경
-        Long currentUserId = 1L; // 임시 하드코딩
+        // Long currentUserId = 1L; // 임시 하드코딩
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        Long currentUserId = userDetails.getId();
+
 
         userService.updateLocation(currentUserId, dto);
 
@@ -45,7 +50,7 @@ public class UserController {
     /**
      * FCM 기기 토큰 등록 API
      * 푸시 알림을 위한 기기 토큰 저장
-     * 
+     *
      * PATCH /api/v1/users/me/device-token
      */
     @PatchMapping("/me/device-token")
@@ -53,7 +58,10 @@ public class UserController {
             @Valid @RequestBody DeviceTokenRequestDto dto
     ) {
         // TODO: 시큐리티 인증 구현 후 실제 로그인한 유저 ID로 변경
-        Long currentUserId = 1L; // 임시 하드코딩
+        // Long currentUserId = 1L; // 임시 하드코딩
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        Long currentUserId = userDetails.getId();
 
         userService.updateDeviceToken(currentUserId, dto);
 
@@ -65,7 +73,7 @@ public class UserController {
     /**
      * 알림 받기 ON/OFF 변경 API
      * 대여 요청 알림 수신 여부 설정
-     * 
+     *
      * PATCH /api/v1/users/me/duty
      */
     @PatchMapping("/me/duty")
@@ -73,7 +81,10 @@ public class UserController {
             @Valid @RequestBody DutyUpdateRequestDto dto
     ) {
         // TODO: 시큐리티 인증 구현 후 실제 로그인한 유저 ID로 변경
-        Long currentUserId = 1L; // 임시 하드코딩
+        // Long currentUserId = 1L; // 임시 하드코딩
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        Long currentUserId = userDetails.getId();
 
         userService.updateDutyStatus(currentUserId, dto);
 
@@ -86,7 +97,7 @@ public class UserController {
      * 특정 유저 프로필 조회 API
      * 대기열 목록에서 유저를 클릭했을 때 상세 정보 반환
      * 민감한 정보는 제외하고 안전한 정보만 반환
-     * 
+     *
      * GET /api/v1/users/{userId}
      */
     @GetMapping("/{userId}")
@@ -110,13 +121,13 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<MyProfileResponseDto>> getMyProfile() {
         // Spring Security의 SecurityContextHolder에서 현재 인증된 사용자 정보를 가져옵니다.
-        // Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         // 인증 객체로부터 사용자 ID를 추출합니다.
-        // 여기서는 principal이 String 타입의 userId라고 가정하며, 실제 구현에 따라 CustomUserDetails 등으로 변경될 수 있습니다.
-        //Long currentUserId = Long.valueOf(authentication.getName());
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        Long currentUserId = userDetails.getId();
         // TODO: 시큐리티 인증 구현 후 실제 로그인한 유저 ID로 변경
-        Long currentUserId = 1L; // 임시 하드코딩
+        // Long currentUserId = 1L; // 임시 하드코딩
 
         // UserService를 통해 현재 로그인한 사용자의 프로필 정보를 조회합니다.
         MyProfileResponseDto myProfile = userService.getMyProfile(currentUserId);

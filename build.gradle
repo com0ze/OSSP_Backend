@@ -33,8 +33,11 @@ dependencies {
     // Firebase Admin SDK (FCM 용도)
     implementation 'com.google.firebase:firebase-admin:9.2.0'
 
-    // 3. Security (⚠️ 강현님의 포스트맨 테스트를 위해 현재는 주석 처리 유지, 회원가입/로그인 구현 시 해제)
-    // implementation 'org.springframework.boot:spring-boot-starter-security'
+    // 3. Security (JWT 인증/인가를 위해 필수)
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
 
     // 4. Lombok (팀원분의 맥북/자바 환경 빌드를 위해 버전 고정 유지)
     compileOnly 'org.projectlombok:lombok:1.18.34'

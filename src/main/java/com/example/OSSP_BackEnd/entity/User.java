@@ -8,8 +8,14 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 
 @Entity
 @Getter
@@ -17,33 +23,40 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)
-public class User {
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
     private Long id;
 
-    @Column(name = "email", length = 255)
+    @Column(name = "email", length = 255, unique = true, nullable = false)
     private String email;
 
-    @Column(name = "password", length = 255)
+    @Column(name = "password", length = 255, nullable = false)
     private String password;
 
-    @Column(name = "nickname", length = 50)
+    @Column(name = "nickname", length = 50, unique = true, nullable = false)
     private String nickname;
 
     @Column(name = "manner_score", precision = 3, scale = 1)
     private BigDecimal mannerScore;
 
-    @Column(name = "is_on_duty")
+    @Column(name = "is_on_duty", nullable = false) // Added nullable = false
     private Boolean isOnDuty;
 
     @Column(name = "current_building", length = 50)
     private String currentBuilding;
 
-    @Column(name = "device_token", length = 255)
-    private String deviceToken;
+    @Column(name = "fcm_token", length = 255)
+    private String fcmToken;
+
+    @Column(name = "refresh_token", length = 255)
+    private String refreshToken;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", length = 20, nullable = false)
+    private Role role;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)
@@ -55,30 +68,62 @@ public class User {
         this.password = password;
         this.mannerScore = BigDecimal.valueOf(0.0);
         this.isOnDuty = false;
+        this.role = Role.ROLE_USER; // 신규 사용자 기본 역할
     }
 
-    // 건물 정보 업데이트 메서드 (경량화 버전)
+    //== UserDetails 인터페이스 구현 메서드 ==//
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority(role.name()));
+    }
+
+    @Override
+    public String getUsername() {
+        return email; // Spring Security에서는 username을 고유 식별자로 사용
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true; // 계정 만료 여부 (true: 만료되지 않음)
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true; // 계정 잠금 여부 (true: 잠기지 않음)
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true; // 비밀번호 만료 여부 (true: 만료되지 않음)
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true; // 계정 활성화 여부 (true: 활성화됨)
+    }
+
+    //== 편의 메서드 ==//
+
     public void updateCurrentBuilding(String currentBuilding) {
         this.currentBuilding = currentBuilding;
     }
 
-    // FCM 기기 토큰 업데이트 메서드
-    public void updateDeviceToken(String fcmToken) {
-        this.deviceToken = fcmToken;
+    public void updateFcmToken(String fcmToken) {
+        this.fcmToken = fcmToken;
+    }
+    
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
     }
 
-    // 매너 점수 업데이트 메서드
     public void updateMannerScore(BigDecimal mannerScore) {
         this.mannerScore = mannerScore;
-    } // 💡 이 닫는 괄호가 빠져 있었습니다!
+    }
 
-    // 알림 받기 ON/OFF 상태 업데이트 메서드
     public void updateDutyStatus(Boolean isOnDuty) {
         this.isOnDuty = isOnDuty;
     }
 
-    // userId 편의 메서드 (다른 팀원 코드가 깨지지 않게 방어)
-    public Long getUserId() {
-        return this.id;
-    }
+    public Long getUserId() { return this.id; }
 }

@@ -10,3 +10,8 @@ spring:
     properties:
       hibernate.dialect: org.hibernate.dialect.MySQL8Dialect
     show-sql: true          # 콘솔에 쿼리문을 예쁘게 보여줍니다.
+
+jwt:
+  secret: kzXtFv5eT464cRLaR4pOsoWCdiWzcQ4i59V+Y0JGnwU=
+  access-token-validity-in-seconds: 3600
+  refresh-token-validity-in-seconds: 86400
