@@ -14,7 +14,6 @@ public record RequestResponseDto(
         String memo,
         RequestStatus status,
         LocalDateTime createdAt,
-        Long requesterId,
         String requesterNickname
 ) {
 
@@ -28,7 +27,6 @@ public record RequestResponseDto(
                 request.getMemo(),
                 request.getStatus(),
                 request.getCreatedAt(),
-                request.getRequester().getId(),
                 request.getRequester().getNickname()
         );
     }

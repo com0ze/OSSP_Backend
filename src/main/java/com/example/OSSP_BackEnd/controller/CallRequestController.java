@@ -28,7 +28,11 @@ public class CallRequestController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<RequestResponseDto>> createRequest(@RequestBody @Valid RequestCreateDto dto) {
-        CallRequest callRequest = callRequestService.createRequest(dto);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        Long currentUserId = userDetails.getId();
+
+        CallRequest callRequest = callRequestService.createRequest(dto, currentUserId);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(
                 HttpStatus.CREATED,
                 "대여 요청이 성공적으로 생성되었습니다.",
@@ -56,10 +60,16 @@ public class CallRequestController {
     public ResponseEntity<ApiResponse<List<RequestListResponseDto>>> getMyRequests(
             @RequestParam(required = false, defaultValue = "active") String type
     ) {
-        // TODO: 시큐리티 인증 구현 후 실제 로그인한 유저 ID로 변경
-        // Long currentUserId = 1L; // 임시 하드코딩
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        Object principal = authentication.getPrincipal();
+
+        if (!(principal instanceof CustomUserDetails)) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error(HttpStatus.UNAUTHORIZED, "인증 정보가 유효하지 않습니다."));
+        }
+
+        CustomUserDetails userDetails = (CustomUserDetails) principal;
         Long currentUserId = userDetails.getId();
         
         List<RequestListResponseDto> requests = callRequestService.getMyRequests(currentUserId, type).stream()
