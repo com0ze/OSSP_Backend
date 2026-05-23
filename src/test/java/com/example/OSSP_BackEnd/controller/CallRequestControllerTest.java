@@ -1,5 +1,9 @@
 package com.example.OSSP_BackEnd.controller;
 
+import com.example.OSSP_BackEnd.config.SecurityConfig;
+import org.springframework.context.annotation.Import;
+import com.example.OSSP_BackEnd.config.JwtAuthenticationFilter;
+import com.example.OSSP_BackEnd.config.JwtTokenProvider;
 import com.example.OSSP_BackEnd.dto.request.RequestAcceptRequestDto;
 import com.example.OSSP_BackEnd.dto.request.RequestCreateDto;
 import com.example.OSSP_BackEnd.entity.CallRequest;
@@ -25,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CallRequestController.class)
+@Import(SecurityConfig.class)
 @DisplayName("CallRequestController 테스트")
 class CallRequestControllerTest {
 
@@ -36,6 +41,12 @@ class CallRequestControllerTest {
 
     @MockBean
     private CallRequestService callRequestService;
+
+    @MockBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockBean
+    private JwtTokenProvider jwtTokenProvider;
 
     private User requester;
     private User provider;

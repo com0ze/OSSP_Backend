@@ -1,0 +1,4 @@
+jwt:
+  secret: V293LCBUaGlzIElzIGEgc2VjcmV0IEtleSBGb3IgSlNXVC4gSXQgU2hvdWxkIEJlIExvbmcgRW5vdWdoIGFuZCBTZWN1cmUuIFBsZWFzZSBSZXBsYWNlIEl0IFdpdGggYSBTdHJvbmcsIFJhbmRvbWx5IEdlbmVyYXRlZCBWYWx1ZSBJbiBQcm9kdWN0aW9uIQ==
+  access-token-validity-in-seconds: 3600 # 1시간
+  refresh-token-validity-in-seconds: 86400 # 24시간

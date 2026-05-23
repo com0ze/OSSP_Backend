@@ -6,11 +6,14 @@ import com.example.OSSP_BackEnd.dto.response.*;
 import com.example.OSSP_BackEnd.entity.CallRequest;
 import com.example.OSSP_BackEnd.entity.MatchHistory;
 import com.example.OSSP_BackEnd.entity.RequestStatus;
+import com.example.OSSP_BackEnd.security.CustomUserDetails; // CustomUserDetails import 추가
 import com.example.OSSP_BackEnd.service.CallRequestService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -54,7 +57,10 @@ public class CallRequestController {
             @RequestParam(required = false, defaultValue = "active") String type
     ) {
         // TODO: 시큐리티 인증 구현 후 실제 로그인한 유저 ID로 변경
-        Long currentUserId = 1L; // 임시 하드코딩
+        // Long currentUserId = 1L; // 임시 하드코딩
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        Long currentUserId = userDetails.getId();
         
         List<RequestListResponseDto> requests = callRequestService.getMyRequests(currentUserId, type).stream()
                 .map(RequestListResponseDto::of)

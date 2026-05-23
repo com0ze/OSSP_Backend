@@ -54,7 +54,7 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
 
         // User 엔티티의 FCM 토큰 업데이트
-        user.updateDeviceToken(dto.fcmToken());
+        user.updateFcmToken(dto.fcmToken());
     }
 
     /**
