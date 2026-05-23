@@ -112,7 +112,7 @@ public class User implements UserDetails {
     public void updateFcmToken(String fcmToken) {
         this.fcmToken = fcmToken;
     }
-    
+
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
     }

@@ -26,6 +26,11 @@ public class CallRequestController {
 
     private final CallRequestService callRequestService;
 
+    /**
+     * 대여 요청 생성
+     * @param dto 대여 요청 생성에 필요한 정보
+     * @return 생성된 대여 요청 정보
+     */
     @PostMapping
     public ResponseEntity<ApiResponse<RequestResponseDto>> createRequest(@RequestBody @Valid RequestCreateDto dto) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -40,7 +45,11 @@ public class CallRequestController {
         ));
     }
 
-
+    /**
+     * 대여 요청 목록 조회
+     * @param status 조회할 대여 요청 상태 (선택 사항)
+     * @return 대여 요청 목록
+     */
     @GetMapping
     public ResponseEntity<ApiResponse<List<RequestListResponseDto>>> getRequests(
             @RequestParam(required = false) RequestStatus status
@@ -55,7 +64,11 @@ public class CallRequestController {
         ));
     }
 
-
+    /**
+     * 내 대여 요청 목록 조회
+     * @param type 조회할 요청 유형 (active: 진행 중, 그 외: 과거)
+     * @return 내 대여 요청 목록
+     */
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<List<RequestListResponseDto>>> getMyRequests(
             @RequestParam(required = false, defaultValue = "active") String type
@@ -87,6 +100,10 @@ public class CallRequestController {
         ));
     }
 
+    /**
+     * 주변 대여 요청 목록 조회
+     * @return 주변 대여 요청 목록
+     */
     @GetMapping("/nearby")
     public ResponseEntity<ApiResponse<List<RequestListResponseDto>>> getNearbyCallRequests() {
         // 💡 팀원의 서비스 메서드 구조에 맞추거나, 강현님이 짠 서비스 메서드를 호출하도록 연결해야 합니다.
@@ -101,7 +118,11 @@ public class CallRequestController {
         ));
     }
 
-
+    /**
+     * 대여 요청 상세 정보 조회
+     * @param requestId 조회할 대여 요청 ID
+     * @return 대여 요청 상세 정보
+     */
     @GetMapping("/{requestId}")
     public ResponseEntity<ApiResponse<RequestDetailResponseDto>> getRequestDetail(@PathVariable Long requestId) {
         CallRequest callRequest = callRequestService.getRequestDetail(requestId);
@@ -112,7 +133,12 @@ public class CallRequestController {
         ));
     }
 
-
+    /**
+     * 대여 요청 수락
+     * @param requestId 수락할 대여 요청 ID
+     * @param dto 대여 요청 수락에 필요한 정보
+     * @return 매칭 기록 정보
+     */
     @PostMapping("/{requestId}/accept")
     public ResponseEntity<ApiResponse<RequestAcceptDto>> acceptRequest(
             @PathVariable Long requestId,
@@ -126,20 +152,33 @@ public class CallRequestController {
         ));
     }
 
-
+    /**
+     * 대여 요청 취소
+     * @param requestId 취소할 대여 요청 ID
+     * @return 성공 응답
+     */
     @PatchMapping("/{requestId}/cancel")
     public ResponseEntity<ApiResponse<Void>> cancelRequest(@PathVariable Long requestId) {
         callRequestService.cancelRequest(requestId);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, "대여 요청이 성공적으로 취소되었습니다."));
     }
 
-
+    /**
+     * 물품 전달 완료 처리
+     * @param requestId 물품 전달을 완료할 대여 요청 ID
+     * @return 성공 응답
+     */
     @PatchMapping("/{requestId}/handover")
     public ResponseEntity<ApiResponse<Void>> handoverItem(@PathVariable Long requestId) {
         callRequestService.handoverItem(requestId);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, "물품 전달이 완료되었습니다."));
     }
 
+    /**
+     * 거래 완료 처리
+     * @param requestId 거래를 완료할 대여 요청 ID
+     * @return 성공 응답
+     */
     @PatchMapping("/{requestId}/complete")
     public ResponseEntity<ApiResponse<Void>> completeRequest(@PathVariable Long requestId) {
         callRequestService.completeRequest(requestId);

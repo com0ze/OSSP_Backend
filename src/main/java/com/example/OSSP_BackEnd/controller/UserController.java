@@ -4,16 +4,15 @@ import com.example.OSSP_BackEnd.dto.request.DeviceTokenRequestDto;
 import com.example.OSSP_BackEnd.dto.request.DutyUpdateRequestDto;
 import com.example.OSSP_BackEnd.dto.request.LocationUpdateRequestDto;
 import com.example.OSSP_BackEnd.dto.response.ApiResponse;
-import com.example.OSSP_BackEnd.dto.response.MyProfileResponseDto; // 추가: 내 프로필 응답 DTO
+import com.example.OSSP_BackEnd.dto.response.MyProfileResponseDto;
 import com.example.OSSP_BackEnd.dto.response.UserProfileResponseDto;
-import com.example.OSSP_BackEnd.security.CustomUserDetails; // CustomUserDetails import 추가
+import com.example.OSSP_BackEnd.security.CustomUserDetails;
 import com.example.OSSP_BackEnd.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication; // 추가: SecurityContextHolder 사용을 위한 import
-import org.springframework.security.core.context.SecurityContextHolder; // 추가: SecurityContextHolder 사용을 위한 import
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -31,16 +30,10 @@ public class UserController {
      */
     @PatchMapping("/location")
     public ResponseEntity<ApiResponse<Void>> updateLocation(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody LocationUpdateRequestDto dto
     ) {
-        // TODO: 시큐리티 인증 구현 후 실제 로그인한 유저 ID로 변경
-        // Long currentUserId = 1L; // 임시 하드코딩
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        Long currentUserId = userDetails.getId();
-
-
-        userService.updateLocation(currentUserId, dto);
+        userService.updateLocation(userDetails.getId(), dto);
 
         return ResponseEntity.ok(
                 ApiResponse.success(HttpStatus.OK, "위치 정보가 성공적으로 갱신되었습니다.")
@@ -55,15 +48,10 @@ public class UserController {
      */
     @PatchMapping("/me/device-token")
     public ResponseEntity<ApiResponse<Void>> updateDeviceToken(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody DeviceTokenRequestDto dto
     ) {
-        // TODO: 시큐리티 인증 구현 후 실제 로그인한 유저 ID로 변경
-        // Long currentUserId = 1L; // 임시 하드코딩
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        Long currentUserId = userDetails.getId();
-
-        userService.updateDeviceToken(currentUserId, dto);
+        userService.updateDeviceToken(userDetails.getId(), dto);
 
         return ResponseEntity.ok(
                 ApiResponse.success(HttpStatus.OK, "기기 토큰이 성공적으로 등록되었습니다.")
@@ -78,15 +66,10 @@ public class UserController {
      */
     @PatchMapping("/me/duty")
     public ResponseEntity<ApiResponse<Void>> updateDutyStatus(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody DutyUpdateRequestDto dto
     ) {
-        // TODO: 시큐리티 인증 구현 후 실제 로그인한 유저 ID로 변경
-        // Long currentUserId = 1L; // 임시 하드코딩
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        Long currentUserId = userDetails.getId();
-
-        userService.updateDutyStatus(currentUserId, dto);
+        userService.updateDutyStatus(userDetails.getId(), dto);
 
         return ResponseEntity.ok(
                 ApiResponse.success(HttpStatus.OK, "알림 받기 설정이 성공적으로 변경되었습니다.")
@@ -119,20 +102,11 @@ public class UserController {
      * @return ResponseEntity<ApiResponse<MyProfileResponseDto>> 현재 로그인한 사용자의 프로필 정보
      */
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<MyProfileResponseDto>> getMyProfile() {
-        // Spring Security의 SecurityContextHolder에서 현재 인증된 사용자 정보를 가져옵니다.
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    public ResponseEntity<ApiResponse<MyProfileResponseDto>> getMyProfile(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        MyProfileResponseDto myProfile = userService.getMyProfile(userDetails.getId());
 
-        // 인증 객체로부터 사용자 ID를 추출합니다.
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        Long currentUserId = userDetails.getId();
-        // TODO: 시큐리티 인증 구현 후 실제 로그인한 유저 ID로 변경
-        // Long currentUserId = 1L; // 임시 하드코딩
-
-        // UserService를 통해 현재 로그인한 사용자의 프로필 정보를 조회합니다.
-        MyProfileResponseDto myProfile = userService.getMyProfile(currentUserId);
-
-        // API 응답 규격에 맞춰 성공 응답을 반환합니다.
         return ResponseEntity.ok(
                 ApiResponse.success(HttpStatus.OK, "내 프로필 정보를 성공적으로 조회했습니다.", myProfile)
         );

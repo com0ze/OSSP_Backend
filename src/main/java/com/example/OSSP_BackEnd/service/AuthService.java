@@ -2,6 +2,7 @@ package com.example.OSSP_BackEnd.service;
 
 import com.example.OSSP_BackEnd.config.JwtTokenProvider;
 import com.example.OSSP_BackEnd.dto.auth.LoginRequest;
+import com.example.OSSP_BackEnd.dto.auth.SignUpRequest;
 import com.example.OSSP_BackEnd.dto.auth.TokenRefreshRequest;
 import com.example.OSSP_BackEnd.dto.auth.TokenResponse;
 import com.example.OSSP_BackEnd.entity.User;
@@ -11,8 +12,11 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +26,29 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    /**
+     * 회원가입 처리
+     * 1. 이메일 중복 확인
+     * 2. 비밀번호 암호화
+     * 3. 사용자 정보 저장
+     */
+    public void signUp(SignUpRequest request) {
+        // 1. 이메일 중복 확인
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+        }
+
+        // 2. 사용자 정보 생성 및 비밀번호 암호화
+        User user = new User(request.getNickname(), request.getEmail(), passwordEncoder.encode(request.getPassword()));
+        user.setMannerScore(new BigDecimal("36.5"));
+        user.setIsOnDuty(true);
+
+
+        // 3. 사용자 정보 저장
+        userRepository.save(user);
+    }
 
     /**
      * 사용자 로그인 처리
