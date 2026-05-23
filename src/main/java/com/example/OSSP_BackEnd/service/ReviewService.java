@@ -25,6 +25,7 @@ public class ReviewService {
     private final UserReviewRepository userReviewRepository;
     private final MatchHistoryRepository matchHistoryRepository;
     private final UserRepository userRepository;
+    private static final BigDecimal ALPHA = new BigDecimal("0.1");
 
     /**
      * 리뷰를 생성하고, 평가받는 사용자의 매너 점수를 업데이트하는 핵심 비즈니스 로직을 수행합니다.
@@ -80,29 +81,30 @@ public class ReviewService {
         );
         userReviewRepository.save(userReview);
 
-        // 7. (선택 사항) 평가받은 사용자(reviewee)의 매너 점수를 업데이트합니다.
-        updateMannerScore(reviewee.getId());
+        // 7. 평가받은 사용자(reviewee)의 매너 점수를 업데이트합니다.
+        updateMannerScore(reviewee, dto.getScore());
 
         return userReview;
     }
 
     /**
      * 특정 사용자의 매너 점수를 다시 계산하여 업데이트합니다.
-     * @param revieweeId 평가받은 사용자의 ID
+     * @param reviewee 평가받은 사용자
+     * @param newScore 새로 받은 리뷰 점수
      */
-    private void updateMannerScore(Long revieweeId) {
-        // 8. 사용자가 받은 모든 리뷰의 평균 점수를 계산합니다. (리뷰가 없으면 0.0을 기본값으로 사용)
-        // findAverageScoreByRevieweeId가 Optional<Double>을 반환하므로 orElse를 사용합니다.
-        double averageScore = userReviewRepository.findAverageScoreByRevieweeId(revieweeId)
-                .orElse(0.0);
+    private void updateMannerScore(User reviewee, BigDecimal newScore) {
+        BigDecimal currentScore = reviewee.getMannerScore();
+        if (currentScore == null) {
+            currentScore = new BigDecimal("3.0");
+        }
 
-        // 9. 평가받는 사용자(reviewee) 엔티티를 조회합니다.
-        User revieweeToUpdate = userRepository.findById(revieweeId)
-                .orElseThrow(() -> new ResourceNotFoundException("매너 점수를 업데이트할 사용자를 찾을 수 없습니다."));
+        // 새로운 점수 = (α * 새로운 리뷰 점수) + ((1 - α) * 기존 점수)
+        BigDecimal updatedScore = newScore.multiply(ALPHA)
+                .add(currentScore.multiply(BigDecimal.ONE.subtract(ALPHA)));
 
-        // 10. 계산된 평균 점수를 소수점 첫째 자리까지 반올림하여 BigDecimal로 변환한 후, 사용자의 매너 점수를 업데이트합니다.
-        // JPA의 변경 감지(dirty checking) 기능에 의해 트랜잭션 커밋 시점에 자동으로 DB에 반영됩니다.
-        BigDecimal newMannerScore = BigDecimal.valueOf(averageScore).setScale(1, RoundingMode.HALF_UP);
-        revieweeToUpdate.updateMannerScore(newMannerScore);
+        // 소수점 첫째 자리에서 반올림
+        BigDecimal newMannerScore = updatedScore.setScale(1, RoundingMode.HALF_UP);
+
+        reviewee.updateMannerScore(newMannerScore);
     }
 }
