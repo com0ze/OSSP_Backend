@@ -35,24 +35,23 @@ public class MatchingAlgorithmService {
      * Key: 기준 건물, Value: 인접한 건물 리스트
      */
     private static final Map<String, List<String>> ADJACENT_BUILDINGS = new HashMap<>() {{
-        // 예시: 정보문화관 주변 건물들
-        put("INFO_CULTURE", Arrays.asList("WONHEUNG", "MANHAE_PLAZA", "HAKRIM"));
-        put("WONHEUNG", Arrays.asList("INFO_CULTURE", "HAKRIM", "GEUMGANG"));
-        put("HAKRIM", Arrays.asList("INFO_CULTURE", "WONHEUNG", "MAIN_BUILDING"));
-        put("GEUMGANG", Arrays.asList("WONHEUNG", "MAIN_BUILDING", "SHINGONG"));
-        put("MAIN_BUILDING", Arrays.asList("HAKRIM", "GEUMGANG", "PALJEONGDO"));
-        put("SHINGONG", Arrays.asList("GEUMGANG", "CENTRAL_LIBRARY", "MYUNGJIN"));
-        put("CENTRAL_LIBRARY", Arrays.asList("SHINGONG", "MYUNGJIN", "SCIENCE"));
-        put("MYUNGJIN", Arrays.asList("SHINGONG", "CENTRAL_LIBRARY", "SCIENCE"));
+        put("INFO_CULTURE", Arrays.asList("HAKRIM", "WONHEUNG"));
+        put("WONHEUNG", Arrays.asList("INFO_CULTURE", "MANHAE_PLAZA", "MAIN_BUILDING", "SHINGONG"));
+        put("HAKRIM", Arrays.asList("INFO_CULTURE", "GEUMGANG"));
+        put("GEUMGANG", Arrays.asList("HAKRIM", "MANHAE_PLAZA", "PALJEONGDO"));
+        put("MAIN_BUILDING", Arrays.asList("WONHEUNG", "MANHAE_PLAZA", "PALJEONGDO", "CENTRAL_LIBRARY"));
+        put("SHINGONG", Arrays.asList("WONHEUNG", "CENTRAL_LIBRARY"));
+        put("CENTRAL_LIBRARY", Arrays.asList("SHINGONG", "MAIN_BUILDING", "MYUNGJIN", "SCIENCE"));
+        put("MYUNGJIN", Arrays.asList("CENTRAL_LIBRARY", "PALJEONGDO", "LAW_SCHOOL", "SCIENCE"));
         put("SCIENCE", Arrays.asList("CENTRAL_LIBRARY", "MYUNGJIN", "MAIN_STADIUM"));
-        put("MAIN_STADIUM", Arrays.asList("SCIENCE", "SCULPTURE", "LAW_SCHOOL"));
-        put("SCULPTURE", Arrays.asList("MAIN_STADIUM", "LAW_SCHOOL"));
-        put("LAW_SCHOOL", Arrays.asList("MAIN_STADIUM", "SCULPTURE", "HYEHWA"));
-        put("HYEHWA", Arrays.asList("LAW_SCHOOL", "SOCIAL_SCIENCE"));
-        put("SOCIAL_SCIENCE", Arrays.asList("HYEHWA", "CULTURE"));
-        put("CULTURE", Arrays.asList("SOCIAL_SCIENCE", "PALJEONGDO"));
-        put("PALJEONGDO", Arrays.asList("MAIN_BUILDING", "CULTURE"));
-        put("MANHAE_PLAZA", Arrays.asList("INFO_CULTURE"));
+        put("MAIN_STADIUM", Arrays.asList("SCIENCE", "LAW_SCHOOL", "SCULPTURE"));
+        put("SCULPTURE", Arrays.asList("MAIN_STADIUM", "HYEHWA", "SOCIAL_SCIENCE"));
+        put("LAW_SCHOOL", Arrays.asList("PALJEONGDO", "MYUNGJIN", "MAIN_STADIUM", "HYEHWA"));
+        put("HYEHWA", Arrays.asList("LAW_SCHOOL", "SCULPTURE", "SOCIAL_SCIENCE"));
+        put("SOCIAL_SCIENCE", Arrays.asList("HYEHWA", "SCULPTURE", "CULTURE"));
+        put("CULTURE", Arrays.asList("SOCIAL_SCIENCE"));
+        put("PALJEONGDO", Arrays.asList("MAIN_BUILDING", "GEUMGANG", "LAW_SCHOOL", "MYUNGJIN"));
+        put("MANHAE_PLAZA", Arrays.asList("GEUMGANG", "MAIN_BUILDING", "WONHEUNG"));
     }};
 
     /**
