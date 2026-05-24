@@ -1,11 +1,13 @@
 package com.example.OSSP_BackEnd.controller;
 
 import com.example.OSSP_BackEnd.dto.auth.LoginRequest;
+import com.example.OSSP_BackEnd.dto.auth.SignUpRequest;
 import com.example.OSSP_BackEnd.dto.auth.TokenRefreshRequest;
 import com.example.OSSP_BackEnd.dto.auth.TokenResponse;
 import com.example.OSSP_BackEnd.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,6 +20,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+
+    /**
+     * 신규 사용자 회원가입을 처리합니다.
+     * 성공 시 201 Created 상태 코드를 반환합니다.
+     * @param signUpRequest 회원가입 요청 DTO (email, password, nickname)
+     * @return ResponseEntity<Void>
+     */
+    @PostMapping("/signup")
+    public ResponseEntity<Void> signUp(@Valid @RequestBody SignUpRequest signUpRequest) {
+        authService.signUp(signUpRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
 
     /**
      * 사용자 로그인을 처리하고, 성공 시 JWT 토큰을 발급합니다.

@@ -5,6 +5,8 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 @Component
 public class JwtTokenProvider {
 
+    private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
     private final SecretKey key;
     private final long accessTokenValidityInMilliseconds;
     private final long refreshTokenValidityInMilliseconds;
@@ -126,6 +129,7 @@ public class JwtTokenProvider {
             return true;
         } catch (Exception e) {
             // MalformedJwtException, ExpiredJwtException, UnsupportedJwtException, IllegalArgumentException
+            logger.error("Invalid JWT token validation failed: {}", e.getMessage());
             return false;
         }
     }

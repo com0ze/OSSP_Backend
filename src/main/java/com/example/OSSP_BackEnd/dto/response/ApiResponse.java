@@ -25,4 +25,8 @@ public class ApiResponse<T> {
     public static <T> ApiResponse<T> success(HttpStatus httpStatus, String message) {
         return new ApiResponse<>(httpStatus.value(), message, null);
     }
+
+    public static <T> ApiResponse<T> error(HttpStatus httpStatus, String message) {
+        return new ApiResponse<>(httpStatus.value(), message, null);
+    }
 }

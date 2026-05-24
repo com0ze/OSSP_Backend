@@ -32,8 +32,8 @@ public class CallRequestService {
      대여 요청 생성 (수요자)
      */
     @Transactional
-    public CallRequest createRequest(RequestCreateDto dto) {
-        User requester = userRepository.findById(dto.requesterId())
+    public CallRequest createRequest(RequestCreateDto dto, Long userId) {
+        User requester = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("요청자를 찾을 수 없습니다."));
 
         CallRequest callRequest = CallRequest.builder()
@@ -168,6 +168,6 @@ public class CallRequestService {
             statuses = List.of(RequestStatus.WAITING, RequestStatus.MATCHED, RequestStatus.IN_USE);
         }
         
-        return callRequestRepository.findByRequester_IdAndStatusInOrderByCreatedAtDesc(userId, statuses);
+        return callRequestRepository.findByRequesterIdAndStatusInOrderByCreatedAtDesc(userId, statuses);
     }
 }

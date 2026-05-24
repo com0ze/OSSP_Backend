@@ -23,9 +23,6 @@ public record RequestCreateDto(
         Integer duration, // 💡 String -> Integer로 변경 및 숫자형 어노테이션으로 교체
 
         @Size(max = 255, message = "메모는 255자 이하여야 합니다.")
-        String memo,
-
-        @NotNull(message = "요청자 ID는 필수입니다.")
-        Long requesterId
+        String memo
 ) {
 }

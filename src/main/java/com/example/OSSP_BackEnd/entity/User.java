@@ -66,7 +66,7 @@ public class User implements UserDetails {
         this.nickname = nickname;
         this.email = email;
         this.password = password;
-        this.mannerScore = BigDecimal.valueOf(0.0);
+        this.mannerScore = BigDecimal.valueOf(3.0);
         this.isOnDuty = false;
         this.role = Role.ROLE_USER; // 신규 사용자 기본 역할
     }
@@ -112,7 +112,7 @@ public class User implements UserDetails {
     public void updateFcmToken(String fcmToken) {
         this.fcmToken = fcmToken;
     }
-    
+
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
     }
