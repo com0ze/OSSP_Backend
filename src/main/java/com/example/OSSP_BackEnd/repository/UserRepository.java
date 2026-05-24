@@ -2,8 +2,10 @@ package com.example.OSSP_BackEnd.repository;
 
 import com.example.OSSP_BackEnd.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying; // 💡 추가됨
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional; // 💡 추가됨
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,4 +38,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT u FROM User u WHERE u.lastActiveAt < :cutoffDate AND u.isOnDuty = true")
     List<User> findInactiveUsers(@Param("cutoffDate") LocalDateTime cutoffDate);
+
+    /**
+     * 💡 [추가된 핵심 로직]
+     * 유저 활동 시 마지막 활동 시간(lastActiveAt)을 초고속으로 업데이트합니다.
+     * 데이터베이스 부하를 최소화하기 위해 엔티티 전체를 SELECT 해오지 않고 직접 UPDATE 명령을 날립니다.
+     */
+    @Modifying(clearAutomatically = true) // 영속성 컨텍스트의 데이터 꼬임을 방지하기 위해 자동 플러시/클리어 설정
+    @Transactional
+    @Query("UPDATE User u SET u.lastActiveAt = CURRENT_TIMESTAMP WHERE u.id = :userId")
+    void updateLastActiveAt(@Param("userId") Long userId);
 }
