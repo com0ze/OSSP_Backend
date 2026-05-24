@@ -17,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization; // 💡 추가됨
+import org.springframework.transaction.support.TransactionSynchronizationManager; // 💡 추가됨
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,8 +42,8 @@ public class CallRequestService {
         User requester = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("요청자를 찾을 수 없습니다."));
 
-        // ✅ 도배 방지: 이미 WAITING 상태의 요청이 있는지 확인
-        if (callRequestRepository.hasWaitingRequest(userId)) {
+        // 💡 1. 도배 방지: 단순 문자열 대신 Enum 객체를 정확히 넘겨주어 500 에러를 방지합니다.
+        if (callRequestRepository.hasWaitingRequest(userId, RequestStatus.WAITING)) {
             log.warn("User #{} attempted to create duplicate waiting request", userId);
             throw new DuplicateWaitingRequestException();
         }
@@ -58,9 +60,14 @@ public class CallRequestService {
 
         CallRequest savedRequest = callRequestRepository.save(callRequest);
 
-        // ✅ Phase 1 매칭 알고리즘 즉시 실행 (비동기)
-        log.info("Triggering Phase 1 matching for request #{}", savedRequest.getId());
-        matchingAlgorithmService.executePhase1Matching(savedRequest);
+        // 💡 2. 동시성 이슈 방어: DB 트랜잭션이 완벽히 커밋(Commit)된 직후에 비동기 매칭을 실행하도록 예약합니다.
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                log.info("Triggering Phase 1 matching for request #{} after DB commit", savedRequest.getId());
+                matchingAlgorithmService.executePhase1Matching(savedRequest);
+            }
+        });
 
         return savedRequest;
     }
@@ -131,7 +138,7 @@ public class CallRequestService {
     }
 
     /*
-    물품 전달 완료 처리 (MATCHED -> IN_USE)
+     물품 전달 완료 처리 (MATCHED -> IN_USE)
      */
     @Transactional
     public CallRequest handoverItem(Long requestId) {
