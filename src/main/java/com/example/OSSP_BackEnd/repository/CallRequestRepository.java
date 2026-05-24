@@ -41,4 +41,12 @@ public interface CallRequestRepository extends JpaRepository<CallRequest, Long> 
      */
     @Query("SELECT cr FROM CallRequest cr JOIN FETCH cr.requester WHERE cr.requester.id = :userId AND cr.status IN :statuses ORDER BY cr.createdAt DESC")
     List<CallRequest> findByRequesterIdAndStatusInOrderByCreatedAtDesc(@Param("userId") Long userId, @Param("statuses") List<RequestStatus> statuses);
+    
+    /**
+     * 도배 방지: 특정 유저가 WAITING 상태의 요청을 가지고 있는지 확인
+     * @param userId 수요자 ID
+     * @return WAITING 상태 요청이 있으면 true
+     */
+    @Query("SELECT CASE WHEN COUNT(cr) > 0 THEN true ELSE false END FROM CallRequest cr WHERE cr.requester.id = :userId AND cr.status = 'WAITING'")
+    boolean hasWaitingRequest(@Param("userId") Long userId);
 }

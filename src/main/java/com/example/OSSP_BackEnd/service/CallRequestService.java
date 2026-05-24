@@ -6,6 +6,7 @@ import com.example.OSSP_BackEnd.entity.CallRequest;
 import com.example.OSSP_BackEnd.entity.MatchHistory;
 import com.example.OSSP_BackEnd.entity.RequestStatus;
 import com.example.OSSP_BackEnd.entity.User;
+import com.example.OSSP_BackEnd.exception.DuplicateWaitingRequestException;
 import com.example.OSSP_BackEnd.exception.InvalidRequestStateException;
 import com.example.OSSP_BackEnd.exception.ResourceNotFoundException;
 import com.example.OSSP_BackEnd.exception.SelfAcceptNotAllowedException;
@@ -13,6 +14,7 @@ import com.example.OSSP_BackEnd.repository.CallRequestRepository;
 import com.example.OSSP_BackEnd.repository.MatchHistoryRepository;
 import com.example.OSSP_BackEnd.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,11 +24,13 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true) // [최적화] 조회 메서드가 많으므로 기본 읽기 전용 모드 활성화
+@Slf4j
 public class CallRequestService {
 
     private final CallRequestRepository callRequestRepository;
     private final UserRepository userRepository;
     private final MatchHistoryRepository matchHistoryRepository;
+    private final MatchingAlgorithmService matchingAlgorithmService;
 
     /*
      대여 요청 생성 (수요자)
@@ -35,6 +39,12 @@ public class CallRequestService {
     public CallRequest createRequest(RequestCreateDto dto, Long userId) {
         User requester = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("요청자를 찾을 수 없습니다."));
+
+        // ✅ 도배 방지: 이미 WAITING 상태의 요청이 있는지 확인
+        if (callRequestRepository.hasWaitingRequest(userId)) {
+            log.warn("User #{} attempted to create duplicate waiting request", userId);
+            throw new DuplicateWaitingRequestException();
+        }
 
         CallRequest callRequest = CallRequest.builder()
                 .itemName(dto.itemName())
@@ -46,7 +56,13 @@ public class CallRequestService {
                 .status(RequestStatus.WAITING)
                 .build();
 
-        return callRequestRepository.save(callRequest);
+        CallRequest savedRequest = callRequestRepository.save(callRequest);
+
+        // ✅ Phase 1 매칭 알고리즘 즉시 실행 (비동기)
+        log.info("Triggering Phase 1 matching for request #{}", savedRequest.getId());
+        matchingAlgorithmService.executePhase1Matching(savedRequest);
+
+        return savedRequest;
     }
 
     /*
