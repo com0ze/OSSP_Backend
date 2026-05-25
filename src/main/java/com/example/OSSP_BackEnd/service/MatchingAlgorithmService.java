@@ -27,7 +27,7 @@ public class MatchingAlgorithmService {
     private final FcmService fcmService;
 
     // 가중치 점수 컷오프
-    private static final double GENERAL_TARGET_CUTOFF = 50.0;  // 일반 타겟: 50점 이상
+    private static final double GENERAL_TARGET_CUTOFF = 40.0;  // 일반 타겟: 40점 이상
     private static final double ELITE_TARGET_CUTOFF = 80.0;    // 정예 타겟: 80점 이상
 
     /**
