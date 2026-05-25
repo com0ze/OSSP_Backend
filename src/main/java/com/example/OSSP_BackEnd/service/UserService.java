@@ -5,11 +5,16 @@ import com.example.OSSP_BackEnd.dto.request.DutyUpdateRequestDto;
 import com.example.OSSP_BackEnd.dto.request.LocationUpdateRequestDto;
 import com.example.OSSP_BackEnd.dto.response.UserProfileResponseDto;
 import com.example.OSSP_BackEnd.dto.response.MyProfileResponseDto;
+import com.example.OSSP_BackEnd.dto.response.UserReviewResponseDto;
 import com.example.OSSP_BackEnd.entity.Building;
 import com.example.OSSP_BackEnd.entity.User;
+import com.example.OSSP_BackEnd.entity.UserReview;
 import com.example.OSSP_BackEnd.exception.ResourceNotFoundException;
 import com.example.OSSP_BackEnd.repository.UserRepository;
+import com.example.OSSP_BackEnd.repository.UserReviewRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final UserReviewRepository userReviewRepository;
 
     /**
      * 유저 위치 정보 갱신 (경량화 버전)
@@ -98,6 +104,50 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("현재 로그인한 사용자를 찾을 수 없습니다.")); // 예외 메시지 구체화
 
         return MyProfileResponseDto.from(user);
+    }
+
+    /**
+     * 현재 로그인한 유저가 받은 리뷰 목록 조회 (마이페이지용)
+     * 페이징 처리 및 최신순 정렬 적용
+     * 
+     * @param userId 현재 로그인한 사용자 ID
+     * @param pageable 페이징 정보 (page, size, sort)
+     * @return Page<UserReviewResponseDto> 페이징 처리된 리뷰 목록
+     */
+    public Page<UserReviewResponseDto> getMyReceivedReviews(Long userId, Pageable pageable) {
+        // 사용자 존재 여부 검증
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("현재 로그인한 사용자를 찾을 수 없습니다.");
+        }
+
+        // 페이징 처리된 리뷰 조회 (N+1 문제 방지를 위해 JOIN FETCH 사용)
+        Page<UserReview> reviewPage = userReviewRepository
+                .findByRevieweeIdOrderByCreatedAtDesc(userId, pageable);
+
+        // Entity → DTO 변환
+        return reviewPage.map(UserReviewResponseDto::from);
+    }
+
+    /**
+     * 특정 유저가 받은 리뷰 목록 조회 (타인 프로필용)
+     * 페이징 처리 및 최신순 정렬 적용
+     * 
+     * @param userId 조회할 사용자 ID
+     * @param pageable 페이징 정보 (page, size, sort)
+     * @return Page<UserReviewResponseDto> 페이징 처리된 리뷰 목록
+     */
+    public Page<UserReviewResponseDto> getUserReceivedReviews(Long userId, Pageable pageable) {
+        // 사용자 존재 여부 검증
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("사용자를 찾을 수 없습니다.");
+        }
+
+        // 페이징 처리된 리뷰 조회 (N+1 문제 방지를 위해 JOIN FETCH 사용)
+        Page<UserReview> reviewPage = userReviewRepository
+                .findByRevieweeIdOrderByCreatedAtDesc(userId, pageable);
+
+        // Entity → DTO 변환
+        return reviewPage.map(UserReviewResponseDto::from);
     }
 }
 
