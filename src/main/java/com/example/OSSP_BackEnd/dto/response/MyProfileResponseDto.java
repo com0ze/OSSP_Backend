@@ -7,10 +7,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
- * 현재 로그인한 사용자의 프로필 정보 조회를 위한 응답 DTO 클래스.
- * API 명세에 따라 닉네임과 매너 점수만 포함합니다.
+ * 현재 로그인한 사용자의 상세 프로필 정보 조회를 위한 응답 DTO
+ * 보안상 위험한 정보(password, tokens)는 철저히 배제하고 화면 렌더링에 필요한 정보만 담습니다.
  */
 @Getter
 @NoArgsConstructor
@@ -20,20 +21,23 @@ public class MyProfileResponseDto {
 
     private Long userId;
     private String nickname;
+    private String email;
     private BigDecimal mannerScore;
+    private String currentBuilding;
+    private Boolean isOnDuty;
+    private String role;
+    private LocalDateTime createdAt; // (선택) 가입일 표시용
 
-    /**
-     * User 엔티티를 MyProfileResponseDto로 변환하는 정적 팩토리 메서드.
-     * User 엔티티에서 필요한 정보(닉네임, 매너 점수)만 추출하여 DTO를 생성합니다.
-     *
-     * @param user User 엔티티 객체
-     * @return MyProfileResponseDto 객체
-     */
     public static MyProfileResponseDto from(User user) {
         return MyProfileResponseDto.builder()
                 .userId(user.getId())
                 .nickname(user.getNickname())
+                .email(user.getEmail())
                 .mannerScore(user.getMannerScore())
+                .currentBuilding(user.getCurrentBuilding())
+                .isOnDuty(user.getIsOnDuty())
+                .role(user.getRole().name()) // Enum 타입일 경우 문자열로 변환
+                .createdAt(user.getCreatedAt())
                 .build();
     }
 }
