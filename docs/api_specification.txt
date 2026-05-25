@@ -324,21 +324,40 @@
 ### 3.2. 대여 요청 목록 조회
 
 - **Endpoint**: `GET /api/v1/requests`
-- **Query Parameter**: `status` (String, optional) - 조회할 요청 상태 (위에 명시된 `RequestStatus` 값 중 하나)
+- **Query Parameter**: `status` (String, optional) - 조회할 요청 상태 (위에 명시된 `RequestStatus` 값 중 하나). 생략 시 모든 상태 조회.
 - **Success Response Body**: `List<Object>`
-  ```json
-  [
-    {
-      "requestId": 1,
-      "itemName": "아이폰 충전기",
-      "buildingName": "정보과학관",
-      "rewardAmt": 1000,
-      "status": "WAITING",
-      "createdAt": "2023-10-27T10:00:00",
-      "requesterNickname": "동국이"
-    }
-  ]
-  ```
+  - **`WAITING`, `CANCELED` 상태일 경우**:
+    ```json
+    [
+      {
+        "requestId": 1,
+        "itemName": "아이폰 충전기",
+        "buildingName": "정보과학관",
+        "rewardAmt": 1000,
+        "status": "WAITING",
+        "createdAt": "2023-10-27T10:00:00",
+        "requesterNickname": "동국이",
+        "requesterId": 1
+      }
+    ]
+    ```
+  - **`MATCHED`, `IN_USE`, `COMPLETED` 상태일 경우**:
+    ```json
+    [
+      {
+        "requestId": 1,
+        "itemName": "아이폰 충전기",
+        "buildingName": "정보과학관",
+        "rewardAmt": 1000,
+        "status": "MATCHED",
+        "createdAt": "2023-10-27T10:00:00",
+        "requesterNickname": "동국이",
+        "requesterId": 1,
+        "matchId": 1,
+        "providerId": 2
+      }
+    ]
+    ```
 - **Failure Response**:
   - `400 Bad Request`: `status` 쿼리 파라미터 값이 유효하지 않은 `RequestStatus` 열거형 값일 경우
     ```json
@@ -401,6 +420,7 @@
 ### 3.4. 주변 대여 요청 목록 조회
 
 - **Endpoint**: `GET /api/v1/requests/nearby`
+- **Description**: 사용자의 현재 위치를 기준으로 주변의 대여 요청 목록을 조회합니다. 오직 `WAITING` 상태인 요청만 조회합니다.
 - **Success Response Body**: `List<Object>` (3.2. 응답 형식과 동일)
 - **Failure Response**:
   - `401 Unauthorized`: 인증되지 않은 사용자의 요청일 경우 (Body 없음)

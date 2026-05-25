@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 @Builder
 public class RequestListResponseDto {
     private Long requestId;
+    private Long requesterId;
     private String itemName;
     private String buildingName;
     private Integer rewardAmt;
@@ -21,6 +22,7 @@ public class RequestListResponseDto {
     public static RequestListResponseDto of(CallRequest callRequest) {
         return RequestListResponseDto.builder()
                 .requestId(callRequest.getId())
+                .requesterId(callRequest.getRequester().getId())
                 .itemName(callRequest.getItemName())
                 .buildingName(callRequest.getBuildingName())
                 .rewardAmt(callRequest.getRewardAmt())
