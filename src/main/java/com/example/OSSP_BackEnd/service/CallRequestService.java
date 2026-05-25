@@ -21,6 +21,7 @@ import org.springframework.transaction.support.TransactionSynchronization; // �
 import org.springframework.transaction.support.TransactionSynchronizationManager; // 💡 추가됨
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -102,95 +103,4 @@ public class CallRequestService {
 
         // [방어 로직 1] WAITING 상태인 건만 수락 가능
         if (callRequest.getStatus() != RequestStatus.WAITING) {
-            throw new InvalidRequestStateException("현재 요청을 수락할 수 없습니다. (상태: " + callRequest.getStatus() + ")");
-        }
-
-        User provider = userRepository.findById(dto.providerId())
-                .orElseThrow(() -> new ResourceNotFoundException("제공자를 찾을 수 없습니다."));
-
-        // [방어 로직 2] 본인이 호출한 글을 본인이 수락하는 행위 차단
-        if (callRequest.getRequester().getId().equals(provider.getId())) {
-            throw new SelfAcceptNotAllowedException("자신의 요청을 수락할 수 없습니다.");
-        }
-
-        // 객체지향 상태 전이 (WAITING -> MATCHED)
-        callRequest.markAsMatched();
-
-        MatchHistory matchHistory = MatchHistory.create(callRequest, provider);
-        return matchHistoryRepository.save(matchHistory);
-    }
-
-    /*
-     대여 요청 취소
-     */
-    @Transactional
-    public CallRequest cancelRequest(Long requestId) {
-        CallRequest callRequest = callRequestRepository.findById(requestId)
-                .orElseThrow(() -> new ResourceNotFoundException("요청을 찾을 수 없습니다."));
-
-        // 유연한 정책 반영: 대기중(WAITING)이거나 매칭된 상태(MATCHED)에서 모두 취소 가능
-        if (callRequest.getStatus() != RequestStatus.WAITING && callRequest.getStatus() != RequestStatus.MATCHED) {
-            throw new InvalidRequestStateException("현재 상태(" + callRequest.getStatus() + ")에서는 요청을 취소할 수 없습니다.");
-        }
-
-        callRequest.markAsCanceled();
-        return callRequestRepository.save(callRequest);
-    }
-
-    /*
-     물품 전달 완료 처리 (MATCHED -> IN_USE)
-     */
-    @Transactional
-    public CallRequest handoverItem(Long requestId) {
-        CallRequest callRequest = callRequestRepository.findById(requestId)
-                .orElseThrow(() -> new ResourceNotFoundException("요청을 찾을 수 없습니다."));
-
-        if (callRequest.getStatus() != RequestStatus.MATCHED) {
-            throw new InvalidRequestStateException("현재 상태(" + callRequest.getStatus() + ")에서는 물품을 전달할 수 없습니다. 매칭된 상태여야 합니다.");
-        }
-
-        callRequest.markAsInUse();
-        return callRequestRepository.save(callRequest);
-    }
-
-    /*
-     반납 완료 및 최종 거래 종료 처리 (IN_USE -> COMPLETED)
-     */
-    @Transactional
-    public CallRequest completeRequest(Long requestId) {
-        CallRequest callRequest = callRequestRepository.findById(requestId)
-                .orElseThrow(() -> new ResourceNotFoundException("요청을 찾을 수 없습니다."));
-
-        if (callRequest.getStatus() != RequestStatus.IN_USE) {
-            throw new InvalidRequestStateException("현재 상태(" + callRequest.getStatus() + ")에서는 거래를 완료할 수 없습니다. 대여중인 상태여야 합니다.");
-        }
-
-        callRequest.markAsCompleted();
-
-        MatchHistory matchHistory = matchHistoryRepository.findByRequestIdWithRequest(requestId)
-                .orElseThrow(() -> new ResourceNotFoundException("매칭 기록을 찾을 수 없습니다."));
-        
-        // 반납 시간 기록 및 매칭 종료
-        matchHistory.markAsReturned(LocalDateTime.now());
-        matchHistoryRepository.save(matchHistory);
-
-        return callRequestRepository.save(callRequest);
-    }
-
-    /*
-     내 대여 현황 조회 (type 파라미터로 진행 중/과거 내역 구분)
-     */
-    public List<CallRequest> getMyRequests(Long userId, String type) {
-        List<RequestStatus> statuses;
-        
-        if ("history".equalsIgnoreCase(type)) {
-            // 과거 내역: COMPLETED, CANCELED
-            statuses = List.of(RequestStatus.COMPLETED, RequestStatus.CANCELED);
-        } else {
-            // 진행 중 내역 (기본값): WAITING, MATCHED, IN_USE
-            statuses = List.of(RequestStatus.WAITING, RequestStatus.MATCHED, RequestStatus.IN_USE);
-        }
-        
-        return callRequestRepository.findByRequesterIdAndStatusInOrderByCreatedAtDesc(userId, statuses);
-    }
-}
+            throw new InvalidRequestStateException("현재 요청을 수락할 수 없습니다. (상태: " + callRequest.getStatus() +

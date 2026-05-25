@@ -12,10 +12,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/reviews")
@@ -45,6 +48,25 @@ public class ReviewController {
         return ResponseEntity.ok(ApiResponse.success(
                 HttpStatus.OK,
                 "리뷰가 성공적으로 등록되었습니다."
+        ));
+    }
+
+    /**
+     * 자신이 작성한 리뷰 목록 조회 API
+     * @return 자신이 작성한 리뷰 목록
+     */
+    @GetMapping("/my")
+    public ResponseEntity<ApiResponse<List<ReviewResponseDto>>> getMyReviews() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        Long reviewerId = userDetails.getId();
+
+        List<ReviewResponseDto> reviews = reviewService.getReviewsByReviewerId(reviewerId);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                HttpStatus.OK,
+                "자신이 작성한 리뷰 목록입니다.",
+                reviews
         ));
     }
 }

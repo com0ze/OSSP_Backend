@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 @Builder
 public class MyProfileResponseDto {
 
+    private Long userId;
     private String nickname;
     private BigDecimal mannerScore;
 
@@ -30,6 +31,7 @@ public class MyProfileResponseDto {
      */
     public static MyProfileResponseDto from(User user) {
         return MyProfileResponseDto.builder()
+                .userId(user.getId())
                 .nickname(user.getNickname())
                 .mannerScore(user.getMannerScore())
                 .build();

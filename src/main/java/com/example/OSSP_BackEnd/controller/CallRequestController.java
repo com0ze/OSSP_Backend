@@ -6,7 +6,7 @@ import com.example.OSSP_BackEnd.dto.response.*;
 import com.example.OSSP_BackEnd.entity.CallRequest;
 import com.example.OSSP_BackEnd.entity.MatchHistory;
 import com.example.OSSP_BackEnd.entity.RequestStatus;
-import com.example.OSSP_BackEnd.security.CustomUserDetails; // CustomUserDetails import 추가
+import com.example.OSSP_BackEnd.security.CustomUserDetails;
 import com.example.OSSP_BackEnd.service.CallRequestService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -66,12 +66,11 @@ public class CallRequestController {
 
     /**
      * 내 대여 요청 목록 조회
-     * @param type 조회할 요청 유형 (active: 진행 중, 그 외: 과거)
      * @return 내 대여 요청 목록
      */
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<List<RequestListResponseDto>>> getMyRequests(
-            @RequestParam(required = false, defaultValue = "active") String type
+    public ResponseEntity<ApiResponse<List<MyRequestListResponseDto>>> getMyRequests(
+            @RequestParam(required = false) RequestStatus status
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Object principal = authentication.getPrincipal();
@@ -84,15 +83,16 @@ public class CallRequestController {
 
         CustomUserDetails userDetails = (CustomUserDetails) principal;
         Long currentUserId = userDetails.getId();
-        
-        List<RequestListResponseDto> requests = callRequestService.getMyRequests(currentUserId, type).stream()
-                .map(RequestListResponseDto::of)
+
+        List<MyRequestListResponseDto> requests = callRequestService.getMyRequestsByStatus(currentUserId, status).stream()
+                .map(MyRequestListResponseDto::of)
                 .collect(Collectors.toList());
-        
-        String message = "active".equalsIgnoreCase(type) 
-                ? "진행 중인 대여 요청 목록을 성공적으로 조회했습니다."
-                : "과거 대여 요청 목록을 성공적으로 조회했습니다.";
-        
+
+        String message = "내 대여 요청 목록을 성공적으로 조회했습니다.";
+        if (status != null) {
+            message = String.format("'%s' 상태의 내 대여 요청 목록을 성공적으로 조회했습니다.", status);
+        }
+
         return ResponseEntity.ok(ApiResponse.success(
                 HttpStatus.OK,
                 message,
