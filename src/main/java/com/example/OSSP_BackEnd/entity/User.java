@@ -62,6 +62,9 @@ public class User implements UserDetails {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "last_active_at")
+    private LocalDateTime lastActiveAt;
+
     public User(String nickname, String email, String password) {
         this.nickname = nickname;
         this.email = email;
@@ -123,6 +126,10 @@ public class User implements UserDetails {
 
     public void updateDutyStatus(Boolean isOnDuty) {
         this.isOnDuty = isOnDuty;
+    }
+
+    public void updateLastActiveAt(LocalDateTime lastActiveAt) {
+        this.lastActiveAt = lastActiveAt;
     }
 
     public Long getUserId() { return this.id; }

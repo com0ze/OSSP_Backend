@@ -42,8 +42,6 @@ public class AuthService {
 
         // 2. 사용자 정보 생성 및 비밀번호 암호화
         User user = new User(request.getNickname(), request.getEmail(), passwordEncoder.encode(request.getPassword()));
-        user.setMannerScore(new BigDecimal("36.5"));
-        user.setIsOnDuty(true);
 
 
         // 3. 사용자 정보 저장
