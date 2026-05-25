@@ -121,7 +121,12 @@
   {
     "userId": 1,
     "nickname": "동국이",
-    "mannerScore": 3.5
+    "email": "student@dgu.ac.kr",
+    "mannerScore": 3.65,
+    "currentBuilding": "신공학관",
+    "isOnDuty": true,
+    "role": "USER",
+    "createdAt": "2023-10-27T10:00:00"
   }
   ```
 - **Failure Response**:
@@ -143,9 +148,8 @@
 - **Success Response Body**:
   ```json
   {
-    "userId": 1,
+    "userId": 2,
     "nickname": "코끼리",
-    "email": "elephant@dgu.ac.kr",
     "mannerScore": 4.0
   }
   ```
@@ -591,18 +595,42 @@
   ]
   ```
 
-### 4.4. 채팅 메시지 전송 (WebSocket)
+### 4.4. 실시간 채팅 (WebSocket/STOMP)
+
+#### 4.4.1. STOMP 연결
+
+- **Endpoint**: `ws://<your-server-address>/ws-stomp`
+- **Description**: 클라이언트는 이 주소로 WebSocket 연결을 시작하여 STOMP 세션을 맺습니다. 헤더에 특별한 인증 정보는 필요하지 않습니다.
+
+#### 4.4.2. 채팅방 구독 (Subscribe)
+
+- **Destination**: `/topic/rooms/{roomId}`
+- **Description**: 특정 채팅방(`roomId`)의 메시지를 수신하기 위해 이 경로를 구독합니다. 구독이 성공하면 해당 채팅방에 새로운 메시지가 도착할 때마다 클라이언트로 메시지가 전송됩니다.
+- **수신 메시지 형식**:
+  ```json
+  {
+    "senderId": 2,
+    "content": "네, 안녕하세요!",
+    "createdAt": "2023-10-27T10:07:00"
+  }
+  ```
+
+#### 4.4.3. 메시지 전송 (Publish)
 
 - **Destination**: `/app/chat.send`
 - **Message Body**:
   ```json
   {
     "roomId": 1,
-    "senderId": 2,
+    "senderId": 1,
     "content": "네, 안녕하세요!"
   }
   ```
-- **Broadcast**: 구독 중인 클라이언트에게 4.3. 응답 형식과 동일한 `ChatMessageResponse` 객체 전송
+- **Description**: 클라이언트가 채팅 메시지를 서버로 보낼 때 사용합니다. 서버는 이 메시지를 받아 해당 `roomId`를 구독하고 있는 모든 클라이언트에게 브로드캐스트합니다.
+
+#### 4.4.4. 구독 해제 (Unsubscribe)
+
+- **Description**: 클라이언트가 특정 채팅방의 메시지 수신을 중단하고 싶을 때, STOMP 클라이언트 라이브러리에서 제공하는 `unsubscribe` 기능을 사용하여 기존 구독을 해제합니다. 별도의 서버 API 호출은 필요하지 않습니다.
 
 ---
 
