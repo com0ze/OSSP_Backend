@@ -103,4 +103,94 @@ public class CallRequestService {
 
         // [방어 로직 1] WAITING 상태인 건만 수락 가능
         if (callRequest.getStatus() != RequestStatus.WAITING) {
-            throw new InvalidRequestStateException("현재 요청을 수락할 수 없습니다. (상태: " + callRequest.getStatus() +
+            throw new InvalidRequestStateException("현재 요청을 수락할 수 없습니다. (상태: " + callRequest.getStatus() + ")");
+        }
+
+        User provider = userRepository.findById(dto.providerId())
+                .orElseThrow(() -> new ResourceNotFoundException("제공자를 찾을 수 없습니다."));
+
+        // [방어 로직 2] 본인이 호출한 글을 본인이 수락하는 행위 차단
+        if (callRequest.getRequester().getId().equals(provider.getId())) {
+            throw new SelfAcceptNotAllowedException("자신의 요청을 수락할 수 없습니다.");
+        }
+
+        // 객체지향 상태 전이 (WAITING -> MATCHED)
+        callRequest.markAsMatched();
+
+        MatchHistory matchHistory = MatchHistory.create(callRequest, provider);
+        return matchHistoryRepository.save(matchHistory);
+    }
+
+    /*
+     대여 요청 취소
+     */
+    @Transactional
+    public CallRequest cancelRequest(Long requestId) {
+        CallRequest callRequest = callRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("요청을 찾을 수 없습니다."));
+
+        // 유연한 정책 반영: 대기중(WAITING)이거나 매칭된 상태(MATCHED)에서 모두 취소 가능
+        if (callRequest.getStatus() != RequestStatus.WAITING && callRequest.getStatus() != RequestStatus.MATCHED) {
+            throw new InvalidRequestStateException("현재 상태(" + callRequest.getStatus() + ")에서는 요청을 취소할 수 없습니다.");
+        }
+
+        callRequest.markAsCanceled();
+        return callRequestRepository.save(callRequest);
+    }
+
+    /*
+     물품 전달 완료 처리 (MATCHED -> IN_USE)
+     */
+    @Transactional
+    public CallRequest handoverItem(Long requestId) {
+        CallRequest callRequest = callRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("요청을 찾을 수 없습니다."));
+
+        if (callRequest.getStatus() != RequestStatus.MATCHED) {
+            throw new InvalidRequestStateException("현재 상태(" + callRequest.getStatus() + ")에서는 물품을 전달할 수 없습니다. 매칭된 상태여야 합니다.");
+        }
+
+        callRequest.markAsInUse();
+        return callRequestRepository.save(callRequest);
+    }
+
+    /*
+     반납 완료 및 최종 거래 종료 처리 (IN_USE -> COMPLETED)
+     */
+    @Transactional
+    public CallRequest completeRequest(Long requestId) {
+        CallRequest callRequest = callRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("요청을 찾을 수 없습니다."));
+
+        if (callRequest.getStatus() != RequestStatus.IN_USE) {
+            throw new InvalidRequestStateException("현재 상태(" + callRequest.getStatus() + ")에서는 거래를 완료할 수 없습니다. 대여중인 상태여야 합니다.");
+        }
+
+        callRequest.markAsCompleted();
+
+        MatchHistory matchHistory = matchHistoryRepository.findByRequestIdWithRequest(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("매칭 기록을 찾을 수 없습니다."));
+        
+        // 반납 시간 기록 및 매칭 종료
+        matchHistory.markAsReturned(LocalDateTime.now());
+        matchHistoryRepository.save(matchHistory);
+
+        return callRequestRepository.save(callRequest);
+    }
+
+    /**
+     * 내 대여 요청 목록을 상태별로 조회합니다.
+     * @param userId 현재 사용자 ID
+     * @param status 조회할 특정 상태 (null일 경우 모든 상태 조회)
+     * @return 상태에 맞는 대여 요청 목록
+     */
+    public List<CallRequest> getMyRequestsByStatus(Long userId, RequestStatus status) {
+        if (status != null) {
+            // 특정 상태가 지정된 경우, 해당 상태의 요청만 조회
+            return callRequestRepository.findByRequesterIdAndStatusInOrderByCreatedAtDesc(userId, List.of(status));
+        } else {
+            // 상태가 지정되지 않은 경우, 모든 상태의 요청 조회
+            return callRequestRepository.findByRequesterIdAndStatusInOrderByCreatedAtDesc(userId, Arrays.asList(RequestStatus.values()));
+        }
+    }
+}
