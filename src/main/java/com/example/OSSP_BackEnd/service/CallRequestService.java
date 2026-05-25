@@ -17,11 +17,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true) // [최적화] 조회 메서드가 많으므로 기본 읽기 전용 모드 활성화
+@Transactional(readOnly = true)
 public class CallRequestService {
 
     private final CallRequestRepository callRequestRepository;
@@ -154,20 +155,19 @@ public class CallRequestService {
         return callRequestRepository.save(callRequest);
     }
 
-    /*
-     내 대여 현황 조회 (type 파라미터로 진행 중/과거 내역 구분)
+    /**
+     * 내 대여 요청 목록을 상태별로 조회합니다.
+     * @param userId 현재 사용자 ID
+     * @param status 조회할 특정 상태 (null일 경우 모든 상태 조회)
+     * @return 상태에 맞는 대여 요청 목록
      */
-    public List<CallRequest> getMyRequests(Long userId, String type) {
-        List<RequestStatus> statuses;
-        
-        if ("history".equalsIgnoreCase(type)) {
-            // 과거 내역: COMPLETED, CANCELED
-            statuses = List.of(RequestStatus.COMPLETED, RequestStatus.CANCELED);
+    public List<CallRequest> getMyRequestsByStatus(Long userId, RequestStatus status) {
+        if (status != null) {
+            // 특정 상태가 지정된 경우, 해당 상태의 요청만 조회
+            return callRequestRepository.findByRequesterIdAndStatusInOrderByCreatedAtDesc(userId, List.of(status));
         } else {
-            // 진행 중 내역 (기본값): WAITING, MATCHED, IN_USE
-            statuses = List.of(RequestStatus.WAITING, RequestStatus.MATCHED, RequestStatus.IN_USE);
+            // 상태가 지정되지 않은 경우, 모든 상태의 요청 조회
+            return callRequestRepository.findByRequesterIdAndStatusInOrderByCreatedAtDesc(userId, Arrays.asList(RequestStatus.values()));
         }
-        
-        return callRequestRepository.findByRequesterIdAndStatusInOrderByCreatedAtDesc(userId, statuses);
     }
 }

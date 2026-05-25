@@ -48,6 +48,9 @@ public class CallRequest {
     @JoinColumn(name = "requester_id", nullable = false)
     private User requester;
 
+    @OneToOne(mappedBy = "request", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private MatchHistory matchHistory;
+
 
     public void markAsMatched() {
         this.status = RequestStatus.MATCHED;
