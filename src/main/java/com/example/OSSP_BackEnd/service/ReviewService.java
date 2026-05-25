@@ -1,6 +1,7 @@
 package com.example.OSSP_BackEnd.service;
 
 import com.example.OSSP_BackEnd.dto.request.ReviewCreateRequestDto;
+import com.example.OSSP_BackEnd.dto.response.ReviewResponseDto;
 import com.example.OSSP_BackEnd.entity.CallRequest;
 import com.example.OSSP_BackEnd.entity.MatchHistory;
 import com.example.OSSP_BackEnd.entity.RequestStatus;
@@ -17,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -106,5 +109,23 @@ public class ReviewService {
         BigDecimal newMannerScore = updatedScore.setScale(1, RoundingMode.HALF_UP);
 
         reviewee.updateMannerScore(newMannerScore);
+    }
+
+    /**
+     * 특정 사용자가 작성한 모든 리뷰를 조회합니다.
+     *
+     * @param reviewerId 리뷰를 작성한 사용자의 ID
+     * @return 해당 사용자가 작성한 리뷰 목록 (DTO)
+     */
+    @Transactional(readOnly = true)
+    public List<ReviewResponseDto> getReviewsByReviewerId(Long reviewerId) {
+        User reviewer = userRepository.findById(reviewerId)
+                .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
+
+        List<UserReview> reviews = userReviewRepository.findByReviewer(reviewer);
+
+        return reviews.stream()
+                .map(ReviewResponseDto::of)
+                .collect(Collectors.toList());
     }
 }
