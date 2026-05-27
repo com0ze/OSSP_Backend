@@ -1,5 +1,6 @@
 package com.example.OSSP_BackEnd.config;
 
+import com.example.OSSP_BackEnd.repository.UserRepository; // 💡 UserRepository 임포트 확인
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,6 +31,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     public static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final UserRepository userRepository; // 💡 UserRepository 주입인자 유지
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -43,9 +45,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 2. validateToken으로 토큰 유효성 검사를 하고, 정상이면 Authentication 객체를 가져옵니다.
         if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt)) {
             Authentication authentication = jwtTokenProvider.getAuthentication(jwt);
+            
             // 3. SecurityContext에 Authentication 객체를 저장합니다.
             SecurityContextHolder.getContext().setAuthentication(authentication);
             logger.debug("Authentication successful. SecurityContext updated for user: {}", authentication.getName());
+
+            // =========================================================
+            // 💡 4. [매칭 알고리즘 고도화] 토큰 식별자 형태(ID 숫자 혹은 이메일 문자열)에 구애받지 않고 접속 시간을 무조건 갱신합니다.
+            String identifier = authentication.getName();
+            try {
+                // 토큰에 유저 고유 ID(숫자)가 담겨 있는 경우 즉시 반영
+                Long userId = Long.parseLong(identifier);
+                userRepository.updateLastActiveAt(userId);
+            } catch (NumberFormatException e) {
+                // 토큰에 이메일 등의 문자열이 담겨 있는 경우 DB에서 유저를 조회한 뒤 고유 ID로 반영
+                userRepository.findByEmail(identifier).ifPresent(user -> {
+                    userRepository.updateLastActiveAt(user.getId());
+                });
+            }
+            // =========================================================
+
         } else {
             logger.debug("JWT validation failed or token is not present.");
         }

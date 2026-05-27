@@ -76,8 +76,9 @@ class CallRequestControllerTest {
     @DisplayName("[성공 케이스] 대여 요청 생성")
     void createRequest_success() throws Exception {
         // Given
-        RequestCreateDto createDto = new RequestCreateDto("Item A", "Building A", 1000, 60, "Memo", requester.getId());
-        given(callRequestService.createRequest(any(RequestCreateDto.class))).willReturn(callRequest);
+        RequestCreateDto createDto = new RequestCreateDto("Item A", "Building A", 1000, 60, "Memo");
+        given(callRequestService.createRequest(any(RequestCreateDto.class), any(Long.class)))
+        .willReturn(callRequest);
 
         // When & Then
         mockMvc.perform(post("/api/v1/requests")
