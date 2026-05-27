@@ -1,6 +1,8 @@
 package com.example.OSSP_BackEnd.repository;
 
+import com.example.OSSP_BackEnd.entity.CallRequest;
 import com.example.OSSP_BackEnd.entity.MatchHistory;
+import com.example.OSSP_BackEnd.entity.RequestStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -40,9 +42,14 @@ public interface MatchHistoryRepository extends JpaRepository<MatchHistory, Long
      * 가중치 계산: 특정 유저가 특정 물건을 빌려준 이력이 있는지 확인
      * @param providerId 공급자 ID
      * @param itemName 물건 이름
-     * @return 해당 물건 대여 이력이 있으면 true
+     * @return 이력 존재 여부 (1L: 있음, 0L: 없음)
      */
-    @Query("SELECT CASE WHEN COUNT(mh) > 0 THEN true ELSE false END FROM MatchHistory mh " +
-           "JOIN mh.request r WHERE mh.provider.id = :providerId AND r.itemName = :itemName")
-    boolean hasProvidedItem(@Param("providerId") Long providerId, @Param("itemName") String itemName);
+    @Query("SELECT COUNT(mh) > 0 FROM MatchHistory mh WHERE mh.provider.id = :providerId AND mh.request.itemName = :itemName AND mh.returnedAt IS NOT NULL")
+    boolean hasProvidedItemBefore(@Param("providerId") Long providerId, @Param("itemName") String itemName);
+
+    @Query("SELECT mh.request FROM MatchHistory mh WHERE mh.provider.id = :providerId AND mh.request.status = :status")
+    List<CallRequest> findCallRequestsByProviderIdAndStatus(@Param("providerId") Long providerId, @Param("status") RequestStatus status);
+
+    @Query("SELECT mh.request FROM MatchHistory mh WHERE mh.provider.id = :providerId")
+    List<CallRequest> findCallRequestsByProviderId(@Param("providerId") Long providerId);
 }

@@ -23,6 +23,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -193,4 +195,21 @@ public class CallRequestService {
             return callRequestRepository.findByRequesterIdAndStatusInOrderByCreatedAtDesc(userId, Arrays.asList(RequestStatus.values()));
         }
     }
-}
+    public List<CallRequest> getMyAndAcceptedRequestsByStatus(Long userId, RequestStatus status) {
+        // 내가 생성한 요청 목록 조회
+        List<CallRequest> myRequests = getMyRequestsByStatus(userId, status);
+
+        // 내가 수락한 요청 목록 조회
+        List<CallRequest> acceptedRequests;
+        if (status != null) {
+            acceptedRequests = matchHistoryRepository.findCallRequestsByProviderIdAndStatus(userId, status);
+        } else {
+            acceptedRequests = matchHistoryRepository.findCallRequestsByProviderId(userId);
+        }
+
+        // 두 목록을 합치고 중복을 제거한 후, 생성 시간 기준으로 내림차순 정렬
+        return Stream.concat(myRequests.stream(), acceptedRequests.stream())
+                .distinct()
+                .sorted((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()))
+                .collect(Collectors.toList());
+    }

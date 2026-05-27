@@ -88,7 +88,7 @@ public class MatchingScoreService {
      * 3. 물건 대여 이력 (20%) - 해당 물건을 빌려준 적이 있으면 20점, 없으면 0점
      */
     private double calculateItemHistoryScore(User user, String requestedItemName) {
-        boolean hasHistory = matchHistoryRepository.hasProvidedItem(user.getId(), requestedItemName);
+        boolean hasHistory = matchHistoryRepository.hasProvidedItemBefore(user.getId(), requestedItemName);
         return hasHistory ? 100.0 : 0.0;  // 100점 or 0점 (가중치 20%가 곱해짐)
     }
 

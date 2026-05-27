@@ -84,13 +84,13 @@ public class CallRequestController {
         CustomUserDetails userDetails = (CustomUserDetails) principal;
         Long currentUserId = userDetails.getId();
 
-        List<MyRequestListResponseDto> requests = callRequestService.getMyRequestsByStatus(currentUserId, status).stream()
+        List<MyRequestListResponseDto> requests = callRequestService.getMyAndAcceptedRequestsByStatus(currentUserId, status).stream()
                 .map(MyRequestListResponseDto::of)
                 .collect(Collectors.toList());
 
-        String message = "내 대여 요청 목록을 성공적으로 조회했습니다.";
+        String message = "내 대여 및 수락 요청 목록을 성공적으로 조회했습니다.";
         if (status != null) {
-            message = String.format("'%s' 상태의 내 대여 요청 목록을 성공적으로 조회했습니다.", status);
+            message = String.format("'%s' 상태의 내 대여 및 수락 요청 목록을 성공적으로 조회했습니다.", status);
         }
 
         return ResponseEntity.ok(ApiResponse.success(
