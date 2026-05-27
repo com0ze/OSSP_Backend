@@ -3,6 +3,7 @@ package com.example.OSSP_BackEnd.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -34,6 +35,9 @@ public class SecurityConfig {
         http
             // CSRF 보호 비활성화 (Stateless API 서버이므로)
             .csrf(AbstractHttpConfigurer::disable)
+
+            // CORS 설정 추가
+            .cors(Customizer.withDefaults())
             
             // 세션 관리 정책을 STATELESS로 설정
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

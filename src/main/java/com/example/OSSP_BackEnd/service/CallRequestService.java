@@ -6,6 +6,7 @@ import com.example.OSSP_BackEnd.entity.CallRequest;
 import com.example.OSSP_BackEnd.entity.MatchHistory;
 import com.example.OSSP_BackEnd.entity.RequestStatus;
 import com.example.OSSP_BackEnd.entity.User;
+import com.example.OSSP_BackEnd.exception.DuplicateWaitingRequestException;
 import com.example.OSSP_BackEnd.exception.InvalidRequestStateException;
 import com.example.OSSP_BackEnd.exception.ResourceNotFoundException;
 import com.example.OSSP_BackEnd.exception.SelfAcceptNotAllowedException;
@@ -13,21 +14,28 @@ import com.example.OSSP_BackEnd.repository.CallRequestRepository;
 import com.example.OSSP_BackEnd.repository.MatchHistoryRepository;
 import com.example.OSSP_BackEnd.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization; // 💡 추가됨
+import org.springframework.transaction.support.TransactionSynchronizationManager; // 💡 추가됨
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
+@Transactional(readOnly = true) // [최적화] 조회 메서드가 많으므로 기본 읽기 전용 모드 활성화
+@Slf4j
 public class CallRequestService {
 
     private final CallRequestRepository callRequestRepository;
     private final UserRepository userRepository;
     private final MatchHistoryRepository matchHistoryRepository;
+    private final MatchingAlgorithmService matchingAlgorithmService;
 
     /*
      대여 요청 생성 (수요자)
@@ -36,6 +44,12 @@ public class CallRequestService {
     public CallRequest createRequest(RequestCreateDto dto, Long userId) {
         User requester = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("요청자를 찾을 수 없습니다."));
+
+        // 💡 1. 도배 방지: 단순 문자열 대신 Enum 객체를 정확히 넘겨주어 500 에러를 방지합니다.
+        if (callRequestRepository.hasWaitingRequest(userId, RequestStatus.WAITING)) {
+            log.warn("User #{} attempted to create duplicate waiting request", userId);
+            throw new DuplicateWaitingRequestException();
+        }
 
         CallRequest callRequest = CallRequest.builder()
                 .itemName(dto.itemName())
@@ -47,7 +61,18 @@ public class CallRequestService {
                 .status(RequestStatus.WAITING)
                 .build();
 
-        return callRequestRepository.save(callRequest);
+        CallRequest savedRequest = callRequestRepository.save(callRequest);
+
+        // 💡 2. 동시성 이슈 방어: DB 트랜잭션이 완벽히 커밋(Commit)된 직후에 비동기 매칭을 실행하도록 예약합니다.
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                log.info("Triggering Phase 1 matching for request #{} after DB commit", savedRequest.getId());
+                matchingAlgorithmService.executePhase1Matching(savedRequest);
+            }
+        });
+
+        return savedRequest;
     }
 
     /*
@@ -116,7 +141,7 @@ public class CallRequestService {
     }
 
     /*
-    물품 전달 완료 처리 (MATCHED -> IN_USE)
+     물품 전달 완료 처리 (MATCHED -> IN_USE)
      */
     @Transactional
     public CallRequest handoverItem(Long requestId) {
@@ -169,5 +194,24 @@ public class CallRequestService {
             // 상태가 지정되지 않은 경우, 모든 상태의 요청 조회
             return callRequestRepository.findByRequesterIdAndStatusInOrderByCreatedAtDesc(userId, Arrays.asList(RequestStatus.values()));
         }
+    }
+
+    public List<CallRequest> getMyAndAcceptedRequestsByStatus(Long userId, RequestStatus status) {
+        // 내가 생성한 요청 목록 조회
+        List<CallRequest> myRequests = getMyRequestsByStatus(userId, status);
+
+        // 내가 수락한 요청 목록 조회
+        List<CallRequest> acceptedRequests;
+        if (status != null) {
+            acceptedRequests = matchHistoryRepository.findCallRequestsByProviderIdAndStatus(userId, status);
+        } else {
+            acceptedRequests = matchHistoryRepository.findCallRequestsByProviderId(userId);
+        }
+
+        // 두 목록을 합치고 중복을 제거한 후, 생성 시간 기준으로 내림차순 정렬
+        return Stream.concat(myRequests.stream(), acceptedRequests.stream())
+                .distinct()
+                .sorted((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()))
+                .collect(Collectors.toList());
     }
 }
