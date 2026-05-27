@@ -195,7 +195,6 @@ public class CallRequestService {
             return callRequestRepository.findByRequesterIdAndStatusInOrderByCreatedAtDesc(userId, Arrays.asList(RequestStatus.values()));
         }
     }
-
     public List<CallRequest> getMyAndAcceptedRequestsByStatus(Long userId, RequestStatus status) {
         // 내가 생성한 요청 목록 조회
         List<CallRequest> myRequests = getMyRequestsByStatus(userId, status);
@@ -214,4 +213,3 @@ public class CallRequestService {
                 .sorted((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()))
                 .collect(Collectors.toList());
     }
-}

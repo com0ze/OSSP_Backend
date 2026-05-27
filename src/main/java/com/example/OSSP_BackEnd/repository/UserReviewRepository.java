@@ -3,6 +3,8 @@ package com.example.OSSP_BackEnd.repository;
 import com.example.OSSP_BackEnd.entity.MatchHistory;
 import com.example.OSSP_BackEnd.entity.User;
 import com.example.OSSP_BackEnd.entity.UserReview;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -36,4 +38,19 @@ public interface UserReviewRepository extends JpaRepository<UserReview, Long> {
      * @return 리뷰 목록
      */
     List<UserReview> findByReviewer(User reviewer);
+
+    /**
+     * 특정 사용자가 받은 모든 리뷰를 최신순으로 페이징 조회합니다. (N+1 문제 방지)
+     * @param revieweeId 평가받은 사용자의 ID
+     * @param pageable 페이징 정보
+     * @return 리뷰 목록 (페이징)
+     */
+    @Query("SELECT ur FROM UserReview ur " +
+           "JOIN FETCH ur.reviewer " +
+           "WHERE ur.reviewee.id = :revieweeId " +
+           "ORDER BY ur.createdAt DESC")
+    Page<UserReview> findByRevieweeIdOrderByCreatedAtDesc(
+            @Param("revieweeId") Long revieweeId,
+            Pageable pageable
+    );
 }
