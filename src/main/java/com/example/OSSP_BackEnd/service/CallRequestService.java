@@ -172,7 +172,7 @@ public class CallRequestService {
 
         MatchHistory matchHistory = matchHistoryRepository.findByRequestIdWithRequest(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("매칭 기록을 찾을 수 없습니다."));
-        
+
         // 반납 시간 기록 및 매칭 종료
         matchHistory.markAsReturned(LocalDateTime.now());
         matchHistoryRepository.save(matchHistory);
@@ -182,6 +182,7 @@ public class CallRequestService {
 
     /**
      * 내 대여 요청 목록을 상태별로 조회합니다.
+     *
      * @param userId 현재 사용자 ID
      * @param status 조회할 특정 상태 (null일 경우 모든 상태 조회)
      * @return 상태에 맞는 대여 요청 목록
@@ -195,6 +196,7 @@ public class CallRequestService {
             return callRequestRepository.findByRequesterIdAndStatusInOrderByCreatedAtDesc(userId, Arrays.asList(RequestStatus.values()));
         }
     }
+
     public List<CallRequest> getMyAndAcceptedRequestsByStatus(Long userId, RequestStatus status) {
         // 내가 생성한 요청 목록 조회
         List<CallRequest> myRequests = getMyRequestsByStatus(userId, status);
@@ -213,3 +215,4 @@ public class CallRequestService {
                 .sorted((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()))
                 .collect(Collectors.toList());
     }
+}
