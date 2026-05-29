@@ -12,8 +12,7 @@ import java.time.LocalDateTime;
 public class ReviewResponseDto {
     private Long reviewId;
     private Long matchId;
-    private Long reviewerId;
-    private Long revieweeId;
+    private String revieweeNickname; // 리뷰 받은 사람의 닉네임
     private BigDecimal score;
     private String comments;
     private LocalDateTime createdAt;
@@ -22,8 +21,7 @@ public class ReviewResponseDto {
         return ReviewResponseDto.builder()
                 .reviewId(userReview.getId())
                 .matchId(userReview.getMatchHistory().getId())
-                .reviewerId(userReview.getReviewer().getId())
-                .revieweeId(userReview.getReviewee().getId())
+                .revieweeNickname(userReview.getReviewee().getNickname())
                 .score(userReview.getScore())
                 .comments(userReview.getComments())
                 .createdAt(userReview.getCreatedAt())
