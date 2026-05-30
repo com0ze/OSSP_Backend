@@ -1,7 +1,9 @@
 package com.example.OSSP_BackEnd.service;
 
 import com.example.OSSP_BackEnd.entity.CallRequest;
+import com.example.OSSP_BackEnd.entity.RequestStatus;
 import com.example.OSSP_BackEnd.entity.User;
+import com.example.OSSP_BackEnd.repository.CallRequestRepository;
 import com.example.OSSP_BackEnd.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,11 +25,12 @@ import java.util.stream.Collectors;
 public class MatchingAlgorithmService {
 
     private final UserRepository userRepository;
+    private final CallRequestRepository callRequestRepository; // 💡 상태 업데이트를 위한 저장소 추가
     private final MatchingScoreService matchingScoreService;
     private final FcmService fcmService;
 
-    // 가중치 점수 컷오프 (테스트가 끝났다면 40.0으로 돌려주세요!)
-    private static final double GENERAL_TARGET_CUTOFF = 0.0;  
+    // 가중치 점수 컷오프
+    private static final double GENERAL_TARGET_CUTOFF = 0.0;  // 디버깅/테스트 후 40.0으로 복구
     private static final double ELITE_TARGET_CUTOFF = 80.0;   
 
     // 캠퍼스 건물 인접 리스트 (그래프 노드)
@@ -57,6 +60,7 @@ public class MatchingAlgorithmService {
      * @param elapsedMinutes 경과 시간 (0분, 1분, 2분...)
      */
     @Async
+    @Transactional // 💡 DB에 변경된 상태(CANCELED)를 커밋하기 위해 Write 권한 트랜잭션 추가
     public void executeDynamicMatching(CallRequest callRequest, int elapsedMinutes) {
         log.info("========== [동적 매칭 확장] 요청 ID: #{}, 경과 시간: {}분 ==========", callRequest.getId(), elapsedMinutes);
         
@@ -65,8 +69,6 @@ public class MatchingAlgorithmService {
         Long requesterId = callRequest.getRequester().getId();
 
         // [핵심 로직] 경과 시간에 따라 탐색할 건물 거리를 정확히 계산합니다.
-        // 0분: 일반(거리 0), 정예(거리 1)
-        // 1분: 일반(거리 1), 정예(거리 2)
         Set<String> generalTargetBuildings = getBuildingsAtExactDistance(requestBuilding, elapsedMinutes);
         Set<String> eliteTargetBuildings = getBuildingsAtExactDistance(requestBuilding, elapsedMinutes + 1);
 
@@ -104,7 +106,7 @@ public class MatchingAlgorithmService {
             log.info(" - 정예 타겟 합격자: {}명", filteredElite.size());
         }
 
-        // 3. 중복 제거 (혹시 모를 교차 방지) 및 최종 발송
+        // 3. 중복 제거 및 최종 발송
         List<User> uniqueTargets = allTargetsToNotify.stream()
                 .distinct()
                 .collect(Collectors.toList());
@@ -114,7 +116,7 @@ public class MatchingAlgorithmService {
     }
 
     /**
-     * 캠퍼스 모든 건물 탐색 완료 시 수요자에게 쏘는 매칭 실패 알림
+     * 캠퍼스 모든 건물 탐색 완료 시 수요자에게 쏘는 매칭 실패 알림 및 스케줄러 타겟 제외 로직
      */
     private void executeFallbackNotification(CallRequest callRequest) {
         User requester = callRequest.getRequester();
@@ -124,11 +126,16 @@ public class MatchingAlgorithmService {
             fcmService.sendMessageTo(requester.getFcmToken(), title, body);
             log.info("✅ 매칭 실패 넛지 알림 전송 완료 (요청 ID: #{})", callRequest.getId());
         }
+
+        // 🔥 [좀비 스케줄러 방지 로직] 상태를 CANCELED로 업데이트하고 DB에 즉시 저장
+        callRequest.markAsCanceled(); // (혹시 메서드명이 다르면 callRequest.setStatus(RequestStatus.CANCELED); 로 변경해주세요)
+        callRequestRepository.save(callRequest);
+        
+        log.info("🛑 대여 요청 #{} 상태를 CANCELED로 변경하여 스케줄러 무한 루프를 차단했습니다.", callRequest.getId());
     }
 
     /**
      * BFS 알고리즘을 사용하여 '정확히 N번째 거리'에 있는 건물들만 추출합니다.
-     * 이미 알림을 받은 이전 거리의 건물들은 중복 발송을 막기 위해 제외됩니다.
      */
     private Set<String> getBuildingsAtExactDistance(String startBuilding, int targetDistance) {
         if (targetDistance == 0) {
@@ -145,7 +152,7 @@ public class MatchingAlgorithmService {
         
         while (!queue.isEmpty()) {
             if (currentDistance == targetDistance) {
-                return new HashSet<>(queue); // 목표 거리에 도달한 노드들만 반환
+                return new HashSet<>(queue); 
             }
             
             int size = queue.size();
@@ -163,7 +170,7 @@ public class MatchingAlgorithmService {
             currentDistance++;
         }
         
-        return Collections.emptySet(); // 더 이상 연결된 건물이 없음
+        return Collections.emptySet(); 
     }
 
     private void sendNotifications(List<User> targets, CallRequest callRequest, String logPrefix) {
