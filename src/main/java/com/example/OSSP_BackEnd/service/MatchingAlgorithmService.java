@@ -1,7 +1,9 @@
 package com.example.OSSP_BackEnd.service;
 
 import com.example.OSSP_BackEnd.entity.CallRequest;
+import com.example.OSSP_BackEnd.entity.RequestStatus;
 import com.example.OSSP_BackEnd.entity.User;
+import com.example.OSSP_BackEnd.repository.CallRequestRepository;
 import com.example.OSSP_BackEnd.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,8 +15,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 매칭 알고리즘 서비스 (디버깅 특화 버전)
- * Phase 1, 2, 3 단계별 타겟팅 및 FCM 발송 로직
+ * 동적 확장 매칭 알고리즘 서비스
+ * 시간에 따라 파도(Wave)처럼 건물을 탐색하며, 더 이상 탐색할 건물이 없으면 자동 종료
  */
 @Service
 @RequiredArgsConstructor
@@ -23,13 +25,15 @@ import java.util.stream.Collectors;
 public class MatchingAlgorithmService {
 
     private final UserRepository userRepository;
+    private final CallRequestRepository callRequestRepository; // 💡 상태 업데이트를 위한 저장소 추가
     private final MatchingScoreService matchingScoreService;
     private final FcmService fcmService;
 
     // 가중치 점수 컷오프
-    private static final double GENERAL_TARGET_CUTOFF = 0.0;  // 디버깅을 위해 0점 처리 중
-    private static final double ELITE_TARGET_CUTOFF = 80.0;    // 정예 타겟: 80점 이상
+    private static final double GENERAL_TARGET_CUTOFF = 30.0;  // 디버깅/테스트 후 40.0으로 복구
+    private static final double ELITE_TARGET_CUTOFF = 70.0;   
 
+    // 캠퍼스 건물 인접 리스트 (그래프 노드)
     private static final Map<String, List<String>> ADJACENT_BUILDINGS = new HashMap<>() {{
         put("INFO_CULTURE", Arrays.asList("HAKRIM", "WONHEUNG"));
         put("WONHEUNG", Arrays.asList("INFO_CULTURE", "MANHAE_PLAZA", "MAIN_BUILDING", "SHINGONG"));
@@ -50,173 +54,146 @@ public class MatchingAlgorithmService {
         put("MANHAE_PLAZA", Arrays.asList("GEUMGANG", "MAIN_BUILDING", "WONHEUNG"));
     }};
 
+    /**
+     * 1분 단위로 호출되는 동적 확장 매칭 메서드
+     * @param callRequest 대여 요청 객체
+     * @param elapsedMinutes 경과 시간 (0분, 1분, 2분...)
+     */
     @Async
-    public void executePhase1Matching(CallRequest callRequest) {
-        log.info("================== [PHASE 1 매칭 시작] ==================");
-        log.info("대여 요청 ID: #{}", callRequest.getId());
+    @Transactional // 💡 DB에 변경된 상태(CANCELED)를 커밋하기 위해 Write 권한 트랜잭션 추가
+    public void executeDynamicMatching(CallRequest callRequest, int elapsedMinutes) {
+        log.info("========== [동적 매칭 확장] 요청 ID: #{}, 경과 시간: {}분 ==========", callRequest.getId(), elapsedMinutes);
         
         String requestBuilding = callRequest.getBuildingName();
         String itemName = callRequest.getItemName();
         Long requesterId = callRequest.getRequester().getId();
 
-        log.info("▶ [STEP 1] 프론트엔드 입력값 검증");
-        log.info(" - 요청자 ID: {}", requesterId);
-        log.info(" - 요청 건물명 (String 텍스트 정확도 확인): [{}]", requestBuilding);
-        log.info(" - 요청 아이템명: [{}]", itemName);
+        // [핵심 로직] 경과 시간에 따라 탐색할 건물 거리를 정확히 계산합니다.
+        Set<String> generalTargetBuildings = getBuildingsAtExactDistance(requestBuilding, elapsedMinutes);
+        Set<String> eliteTargetBuildings = getBuildingsAtExactDistance(requestBuilding, elapsedMinutes + 1);
 
-        // 1. 일반 타겟: 동일 건물에 있는 유저
-        List<User> sameBuildingUsers = userRepository.findActiveUsersInBuilding(requestBuilding);
-        
-        log.info("▶ [STEP 2] DB 조회 1차 결과 ( userRepository.findActiveUsersInBuilding )");
-        log.info(" - DB에서 꺼내온 동일 건물 유저 수: {}명", sameBuildingUsers.size());
-        
-        // DB에서 가져온 유저들의 실제 상세 스펙 출력
-        if (!sameBuildingUsers.isEmpty()) {
-            for (User u : sameBuildingUsers) {
-                log.info("   -> [DB 추출 유저] ID: {}, 닉네임: {}, 건물: [{}], OnDuty상태: {}", 
-                        u.getId(), u.getNickname(), u.getCurrentBuilding(), u.getIsOnDuty());
-            }
-        } else {
-            log.warn("🚨 [경고] DB에서 유저를 한 명도 찾지 못했습니다! (건물명 불일치 또는 is_on_duty 매핑 에러 의심)");
+        log.info("▶ 거리 {} (일반 타겟 건물): {}", elapsedMinutes, generalTargetBuildings);
+        log.info("▶ 거리 {} (정예 타겟 건물): {}", elapsedMinutes + 1, eliteTargetBuildings);
+
+        // 🚨 종료 조건: 일반/정예 타겟 건물이 더 이상 존재하지 않음 = 캠퍼스 전체 탐색 끝
+        if (generalTargetBuildings.isEmpty() && eliteTargetBuildings.isEmpty()) {
+            log.warn("🚨 [탐색 종료] 캠퍼스 내 모든 건물을 탐색했습니다. 매칭 실패 넛지 알림을 발송합니다.");
+            executeFallbackNotification(callRequest);
+            return;
         }
 
-        log.info("▶ [STEP 3] 컷오프( {}점 ) 필터링 심사 시작", GENERAL_TARGET_CUTOFF);
-        List<User> generalTargets = sameBuildingUsers.stream()
-                // 본인(요청자) 제외 로직 (혹시라도 DB에서 본인을 가져왔을 경우 대비)
-                .filter(user -> !user.getId().equals(requesterId))
-                .peek(user -> log.info(" - 심사 중... 대상 유저ID: {}", user.getId()))
-                .filter(user -> matchingScoreService.isEligibleTarget(user, itemName, GENERAL_TARGET_CUTOFF))
-                .peek(user -> log.info("   ★ [일반 타겟 합격!] 유저ID: {}", user.getId()))
+        List<User> allTargetsToNotify = new ArrayList<>();
+
+        // 1. 일반 타겟 필터링
+        if (!generalTargetBuildings.isEmpty()) {
+            List<User> generalUsers = userRepository.findActiveUsersInBuildings(new ArrayList<>(generalTargetBuildings));
+            List<User> filteredGeneral = generalUsers.stream()
+                    .filter(user -> !user.getId().equals(requesterId))
+                    .filter(user -> matchingScoreService.isEligibleTarget(user, itemName, GENERAL_TARGET_CUTOFF))
+                    .collect(Collectors.toList());
+            allTargetsToNotify.addAll(filteredGeneral);
+            log.info(" - 일반 타겟 합격자: {}명", filteredGeneral.size());
+        }
+
+        // 2. 정예 타겟 필터링
+        if (!eliteTargetBuildings.isEmpty()) {
+            List<User> eliteUsers = userRepository.findActiveUsersInBuildings(new ArrayList<>(eliteTargetBuildings));
+            List<User> filteredElite = eliteUsers.stream()
+                    .filter(user -> !user.getId().equals(requesterId))
+                    .filter(user -> matchingScoreService.isEligibleTarget(user, itemName, ELITE_TARGET_CUTOFF))
+                    .collect(Collectors.toList());
+            allTargetsToNotify.addAll(filteredElite);
+            log.info(" - 정예 타겟 합격자: {}명", filteredElite.size());
+        }
+
+        // 3. 중복 제거 및 최종 발송
+        List<User> uniqueTargets = allTargetsToNotify.stream()
+                .distinct()
                 .collect(Collectors.toList());
 
-        log.info("▶ [STEP 4] Phase 1 일반 타겟 최종 인원: {}명", generalTargets.size());
-
-        // 2. 정예 타겟 (조기 편입)
-        List<String> adjacentBuildings = getAdjacentBuildings(requestBuilding, 1);
-        List<User> adjacentUsers = userRepository.findActiveUsersInBuildings(adjacentBuildings);
-        
-        List<User> eliteTargets = adjacentUsers.stream()
-                .filter(user -> !user.getId().equals(requesterId))
-                .filter(user -> matchingScoreService.isEligibleTarget(user, itemName, ELITE_TARGET_CUTOFF))
-                .collect(Collectors.toList());
-
-        log.info("▶ [STEP 5] Phase 1 정예 타겟 (80점 이상) 최종 인원: {}명", eliteTargets.size());
+        sendNotifications(uniqueTargets, callRequest, elapsedMinutes + "분차 확장");
         log.info("=========================================================");
-
-        // 3. FCM 알림 발송
-        List<User> allPhase1Targets = new ArrayList<>();
-        allPhase1Targets.addAll(generalTargets);
-        allPhase1Targets.addAll(eliteTargets);
-
-        sendNotifications(allPhase1Targets, callRequest, "Phase 1");
     }
 
-    @Async
-    public void executePhase2Matching(CallRequest callRequest) {
-        log.info("================== [PHASE 2 매칭 시작] ==================");
-        String requestBuilding = callRequest.getBuildingName();
-        String itemName = callRequest.getItemName();
-        Long requesterId = callRequest.getRequester().getId();
-
-        List<String> adjacentLevel1 = getAdjacentBuildings(requestBuilding, 1);
-        List<User> level1Users = userRepository.findActiveUsersInBuildings(adjacentLevel1);
-        
-        List<User> generalTargets = level1Users.stream()
-                .filter(user -> !user.getId().equals(requesterId))
-                .filter(user -> matchingScoreService.isEligibleTarget(user, itemName, GENERAL_TARGET_CUTOFF))
-                .collect(Collectors.toList());
-
-        List<String> adjacentLevel2 = getAdjacentBuildings(requestBuilding, 2);
-        List<User> level2Users = userRepository.findActiveUsersInBuildings(adjacentLevel2);
-        
-        List<User> eliteTargets = level2Users.stream()
-                .filter(user -> !user.getId().equals(requesterId))
-                .filter(user -> matchingScoreService.isEligibleTarget(user, itemName, ELITE_TARGET_CUTOFF))
-                .collect(Collectors.toList());
-
-        log.info("[PHASE 2] General Targets: {} 명, Elite Targets: {} 명", generalTargets.size(), eliteTargets.size());
-        log.info("=========================================================");
-
-        List<User> allPhase2Targets = new ArrayList<>();
-        allPhase2Targets.addAll(generalTargets);
-        allPhase2Targets.addAll(eliteTargets);
-
-        sendNotifications(allPhase2Targets, callRequest, "Phase 2");
-    }
-
-    @Async
-    public void executePhase3Fallback(CallRequest callRequest) {
-        log.info("[PHASE 3] Fallback - sending nudge to requester for request #{}", callRequest.getId());
-
+    /**
+     * 캠퍼스 모든 건물 탐색 완료 시 수요자에게 쏘는 매칭 실패 알림 및 스케줄러 타겟 제외 로직
+     */
+    private void executeFallbackNotification(CallRequest callRequest) {
         User requester = callRequest.getRequester();
-        
         if (requester.getFcmToken() != null) {
             String title = "매칭이 어려운 상황이에요 😢";
-            String body = String.format(
-                    "보상금을 올려서 다시 요청해보시겠어요? (현재: %d원)",
-                    callRequest.getRewardAmt()
-            );
-
+            String body = String.format("보상금을 올려서 다시 요청해보시겠어요? (현재: %d원)", callRequest.getRewardAmt());
             fcmService.sendMessageTo(requester.getFcmToken(), title, body);
-            log.info("[PHASE 3] Nudge notification sent to requester #{}", requester.getId());
-        } else {
-            log.warn("[PHASE 3] Requester #{} has no FCM token", requester.getId());
+            log.info("✅ 매칭 실패 넛지 알림 전송 완료 (요청 ID: #{})", callRequest.getId());
         }
+
+        // 🔥 [좀비 스케줄러 방지 로직] 상태를 CANCELED로 업데이트하고 DB에 즉시 저장
+        callRequest.markAsCanceled(); // (혹시 메서드명이 다르면 callRequest.setStatus(RequestStatus.CANCELED); 로 변경해주세요)
+        callRequestRepository.save(callRequest);
+        
+        log.info("🛑 대여 요청 #{} 상태를 CANCELED로 변경하여 스케줄러 무한 루프를 차단했습니다.", callRequest.getId());
     }
 
-    private List<String> getAdjacentBuildings(String buildingName, int level) {
-        if (level <= 0) {
-            return Collections.emptyList();
+    /**
+     * BFS 알고리즘을 사용하여 '정확히 N번째 거리'에 있는 건물들만 추출합니다.
+     */
+    private Set<String> getBuildingsAtExactDistance(String startBuilding, int targetDistance) {
+        if (targetDistance == 0) {
+            return new HashSet<>(Collections.singletonList(startBuilding));
         }
 
-        Set<String> result = new HashSet<>();
-        Set<String> currentLevel = new HashSet<>();
-        currentLevel.add(buildingName);
-
-        for (int i = 0; i < level; i++) {
-            Set<String> nextLevel = new HashSet<>();
-            for (String building : currentLevel) {
-                List<String> adjacent = ADJACENT_BUILDINGS.getOrDefault(building, Collections.emptyList());
-                nextLevel.addAll(adjacent);
+        Set<String> visited = new HashSet<>();
+        Queue<String> queue = new LinkedList<>();
+        
+        queue.add(startBuilding);
+        visited.add(startBuilding);
+        
+        int currentDistance = 0;
+        
+        while (!queue.isEmpty()) {
+            if (currentDistance == targetDistance) {
+                return new HashSet<>(queue); 
             }
-            result.addAll(nextLevel);
-            currentLevel = nextLevel;
+            
+            int size = queue.size();
+            for (int i = 0; i < size; i++) {
+                String current = queue.poll();
+                List<String> neighbors = ADJACENT_BUILDINGS.getOrDefault(current, Collections.emptyList());
+                
+                for (String neighbor : neighbors) {
+                    if (!visited.contains(neighbor)) {
+                        visited.add(neighbor);
+                        queue.add(neighbor);
+                    }
+                }
+            }
+            currentDistance++;
         }
-
-        result.remove(buildingName);
-        return new ArrayList<>(result);
+        
+        return Collections.emptySet(); 
     }
 
-    private void sendNotifications(List<User> targets, CallRequest callRequest, String phaseName) {
+    private void sendNotifications(List<User> targets, CallRequest callRequest, String logPrefix) {
         if (targets.isEmpty()) {
-            log.warn("🚨 [{}] 타겟 유저가 0명이므로 알림 발송을 취소합니다. (요청 ID: #{})", phaseName, callRequest.getId());
+            log.warn("🚨 [{}] 조건에 맞는 타겟 유저가 0명입니다.", logPrefix);
             return;
         }
 
         String title = String.format("🎯 새로운 대여 요청 (%s)", callRequest.getBuildingName());
-        String body = String.format(
-                "%s - 보상금 %d원 (기간: %d분)",
-                callRequest.getItemName(),
-                callRequest.getRewardAmt(),
-                callRequest.getDuration()
-        );
+        String body = String.format("%s - 보상금 %d원 (기간: %d분)", 
+                callRequest.getItemName(), callRequest.getRewardAmt(), callRequest.getDuration());
 
         int successCount = 0;
         for (User user : targets) {
             if (user.getFcmToken() != null) {
                 try {
-                    log.info(">> [{}] 유저 #{} ({}) 에게 FCM 전송 시도 중...", phaseName, user.getId(), user.getNickname());
                     fcmService.sendMessageTo(user.getFcmToken(), title, body);
                     successCount++;
                 } catch (Exception e) {
-                    log.error("[{}] 유저 #{} FCM 발송 실패: {}", phaseName, user.getId(), e.getMessage());
+                    log.error("[{}] 유저 #{} FCM 발송 실패: {}", logPrefix, user.getId(), e.getMessage());
                 }
-            } else {
-                log.warn("[{}] 유저 #{} 은(는) FCM 토큰이 NULL 입니다. 발송 스킵.", phaseName, user.getId());
             }
         }
-
-        log.info("✅ [{}] 최종 알림 전송 완료: 성공 {}/{} 건 (요청 ID: #{})", 
-                phaseName, successCount, targets.size(), callRequest.getId());
+        log.info("✅ [{}] 알림 전송 성공: {}/{} 건", logPrefix, successCount, targets.size());
     }
 }

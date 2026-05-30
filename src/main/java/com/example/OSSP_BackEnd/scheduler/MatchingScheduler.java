@@ -18,8 +18,9 @@ import java.util.List;
 
 /**
  * 매칭 알고리즘 스케줄러
- * - Phase 2/3 단계별 매칭 실행
+ * - 1분마다 동적 확장 매칭 실행
  * - 잠수 유저 차단 (매일 새벽 4시)
+ * - 오래된 요청 자동 취소
  */
 @Component
 @RequiredArgsConstructor
@@ -30,44 +31,39 @@ public class MatchingScheduler {
     private final UserRepository userRepository;
     private final MatchingAlgorithmService matchingAlgorithmService;
 
-    // Phase 2 실행 대기 시간 (분) - Phase 1 발송 후 5분 뒤
-    private static final int PHASE2_DELAY_MINUTES = 5;
-
-    // Phase 3 실행 대기 시간 (분) - Phase 2 발송 후 10분 뒤
-    private static final int PHASE3_DELAY_MINUTES = 15;  // Phase 1 기준 총 15분
-
     /**
-     * Phase 2 & 3 매칭 스케줄러
-     * 1분마다 실행하여 WAITING 상태 요청들을 확인하고 단계별 매칭 실행
+     * 🔥 [핵심] BFS 기반 동적 확장 매칭 스케줄러
+     * 매 1분마다 실행하여 WAITING 상태 요청들의 경과 시간을 계산하고,
+     * 해당 경과 시간(분)을 거리(Distance)로 사용하여 BFS 탐색을 수행합니다.
      */
     @Scheduled(cron = "0 * * * * *")  // 매 분 0초에 실행
     @Transactional
-    public void executePhase2And3Matching() {
+    public void executeDynamicMatching() {
         LocalDateTime now = LocalDateTime.now();
 
         // WAITING 상태인 모든 요청 조회
         List<CallRequest> waitingRequests = callRequestRepository
                 .findByStatusWithRequesterOrderByCreatedAtDesc(RequestStatus.WAITING);
 
-        for (CallRequest request : waitingRequests) {
-            long minutesSinceCreated = ChronoUnit.MINUTES.between(request.getCreatedAt(), now);
-
-            // Phase 2 실행 시점 체크 (5분 경과)
-            if (minutesSinceCreated >= PHASE2_DELAY_MINUTES 
-                    && minutesSinceCreated < PHASE2_DELAY_MINUTES + 1) {
-                log.info("[SCHEDULER] Triggering Phase 2 for request #{} ({}min elapsed)",
-                        request.getId(), minutesSinceCreated);
-                matchingAlgorithmService.executePhase2Matching(request);
-            }
-
-            // Phase 3 실행 시점 체크 (15분 경과)
-            if (minutesSinceCreated >= PHASE3_DELAY_MINUTES 
-                    && minutesSinceCreated < PHASE3_DELAY_MINUTES + 1) {
-                log.info("[SCHEDULER] Triggering Phase 3 fallback for request #{} ({}min elapsed)",
-                        request.getId(), minutesSinceCreated);
-                matchingAlgorithmService.executePhase3Fallback(request);
-            }
+        if (waitingRequests.isEmpty()) {
+            log.debug("[SCHEDULER] 현재 처리 중인 대여 요청이 없습니다.");
+            return;
         }
+
+        log.info("========== [매칭 스케줄러] 실행 시각: {} ==========", now);
+        log.info("▶ 처리 대상 요청 건수: {}건", waitingRequests.size());
+
+        for (CallRequest request : waitingRequests) {
+            // 요청 생성 시간으로부터 경과된 분(Minute) 계산
+            long elapsedMinutes = ChronoUnit.MINUTES.between(request.getCreatedAt(), now);
+            
+            log.info("→ 요청 ID: #{}, 경과 시간: {}분", request.getId(), elapsedMinutes);
+
+            // 동적 확장 매칭 알고리즘 호출 (경과 시간 = BFS 거리)
+            matchingAlgorithmService.executeDynamicMatching(request, (int) elapsedMinutes);
+        }
+
+        log.info("==================================================");
     }
 
     /**

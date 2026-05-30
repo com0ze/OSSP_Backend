@@ -63,14 +63,9 @@ public class CallRequestService {
 
         CallRequest savedRequest = callRequestRepository.save(callRequest);
 
-        // 💡 2. 동시성 이슈 방어: DB 트랜잭션이 완벽히 커밋(Commit)된 직후에 비동기 매칭을 실행하도록 예약합니다.
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                log.info("Triggering Phase 1 matching for request #{} after DB commit", savedRequest.getId());
-                matchingAlgorithmService.executePhase1Matching(savedRequest);
-            }
-        });
+        // ✅ BFS 동적 매칭으로 전환: 요청 생성 후 스케줄러가 1분마다 자동으로 매칭을 진행합니다.
+        // 최초 매칭(0분 경과)도 스케줄러가 다음 1분 안에 처리하므로 여기서 수동 호출 불필요
+        log.info("대여 요청 #{} 생성 완료. 스케줄러가 동적 매칭을 자동 처리합니다.", savedRequest.getId());
 
         return savedRequest;
     }

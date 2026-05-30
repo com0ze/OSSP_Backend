@@ -52,4 +52,14 @@ public interface MatchHistoryRepository extends JpaRepository<MatchHistory, Long
 
     @Query("SELECT mh.request FROM MatchHistory mh WHERE mh.provider.id = :providerId")
     List<CallRequest> findCallRequestsByProviderId(@Param("providerId") Long providerId);
+
+    /**
+     * 특정 유저가 '띄어쓰기와 대소문자를 무시한 상태'에서 
+     * 해당 키워드가 포함된(LIKE) 물건을 대여해 준 적이 있는지 확인
+     */
+    @Query("SELECT CASE WHEN COUNT(m) > 0 THEN true ELSE false END " +
+           "FROM MatchHistory m " +
+           "WHERE m.provider.id = :userId " +
+           "AND LOWER(REPLACE(m.request.itemName, ' ', '')) LIKE CONCAT('%', :cleanItemName, '%')")
+    boolean hasProvidedSimilarItemBefore(@Param("userId") Long userId, @Param("cleanItemName") String cleanItemName);
 }

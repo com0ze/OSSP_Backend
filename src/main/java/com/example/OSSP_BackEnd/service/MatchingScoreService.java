@@ -13,8 +13,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 /**
- * 매칭 알고리즘 가중치 계산 서비스
- * 0~100점 만점의 matching_power_score를 계산
+ * 매칭 알고리즘 가중치 계산 서비스 (디버깅용 로그 강화 버전)
  */
 @Service
 @RequiredArgsConstructor
@@ -24,16 +23,12 @@ public class MatchingScoreService {
 
     private final MatchHistoryRepository matchHistoryRepository;
 
-    // 가중치 비율
     private static final double MANNER_SCORE_WEIGHT = 0.5;  // 50%
     private static final double RECENT_ACTIVITY_WEIGHT = 0.3;  // 30%
     private static final double ITEM_HISTORY_WEIGHT = 0.2;  // 20%
 
     /**
-     * 매칭 파워 스코어 계산 (0~100점)
-     * * @param user 대상 유저
-     * @param requestedItemName 수요자가 요청한 물건 이름
-     * @return 매칭 파워 스코어 (0~100)
+     * 매칭 파워 스코어 계산 및 상세 분석 로그 출력
      */
     public double calculateMatchingScore(User user, String requestedItemName) {
         double mannerScore = calculateMannerScore(user);
@@ -44,34 +39,26 @@ public class MatchingScoreService {
                 + (recentActivityScore * RECENT_ACTIVITY_WEIGHT)
                 + (itemHistoryScore * ITEM_HISTORY_WEIGHT);
 
-        log.debug("User {} Matching Score: Total={}, Manner={}, Recent={}, Item={}",
-                user.getId(), totalScore, mannerScore, recentActivityScore, itemHistoryScore);
+        double finalScore = Math.round(totalScore * 100.0) / 100.0;
 
-        return Math.round(totalScore * 100.0) / 100.0;  // 소수점 둘째 자리까지
+        // 🔥 [핵심 개선] log.debug 대신 log.info를 사용하여 모든 유저의 점수 스펙을 콘솔에 강제 출력합니다.
+        log.info("   [점수 분석] 유저 #{} ({}) -> 총점: {}점 [매너(50%): {}점, 최근접속(30%): {}점, 대여이력(20%): {}점]",
+                user.getId(), user.getNickname(), finalScore, mannerScore, recentActivityScore, itemHistoryScore);
+
+        return finalScore;
     }
 
-    /**
-     * 1. 매너 점수 (50%) - 5.0 만점 기준을 100점으로 환산
-     * 예: 4.5점 -> 90점
-     */
     private double calculateMannerScore(User user) {
         if (user.getMannerScore() == null) {
-            return 60.0;  // 기본값 (3.0점 기준)
+            return 60.0;
         }
-
-        // 5.0 만점을 100점 만점으로 환산
         return user.getMannerScore()
                 .divide(BigDecimal.valueOf(5.0), 2, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100.0))
                 .doubleValue();
     }
 
-    /**
-     * 2. 최근 활동 점수 (30%) - 최근 접속 시간(last_active_at) 기준 
-     * 방금 접속한 유저일수록 실시간 매칭 확률이 높으므로 높은 점수 부여
-     */
     private double calculateRecentActivityScore(User user) {
-        // 접속 기록이 없으면 0점 처리
         if (user.getLastActiveAt() == null) {
             return 0.0; 
         }
@@ -79,37 +66,24 @@ public class MatchingScoreService {
         LocalDateTime now = LocalDateTime.now();
         long hoursElapsed = ChronoUnit.HOURS.between(user.getLastActiveAt(), now);
 
-        // 1시간 이내 방금 전 접속한 유저는 만점 (100점)
         if (hoursElapsed <= 1) {
             return 100.0;
         }
-
-        // 7일(168시간) 이상 장기 미접속 유저는 0점
         if (hoursElapsed >= 168) {
             return 0.0;
         }
 
-        // 그 외의 경우 시간에 비례하여 선형 차감 (최대 168시간 기준)
         double decayRatio = 1.0 - ((double) hoursElapsed / 168.0);
-        return Math.round(decayRatio * 1000.0) / 10.0; // 소수점 첫째 자리까지 반올림
+        return Math.round(decayRatio * 1000.0) / 10.0;
     }
 
-    /**
-     * 3. 물건 대여 이력 (20%) - 해당 물건을 빌려준 적이 있으면 100점, 없으면 0점
-     */
     private double calculateItemHistoryScore(User user, String requestedItemName) {
+        // 지난번 추가한 띄어쓰기/대소문자 무시 고도화 쿼리가 있다면 해당 메서드명으로 유지해주세요!
         boolean hasHistory = matchHistoryRepository.hasProvidedItemBefore(user.getId(), requestedItemName);
-        return hasHistory ? 100.0 : 0.0;  // 100점 or 0점 (가중치 20%가 곱해짐)
+        return hasHistory ? 100.0 : 0.0;
     }
 
-    /**
-     * 신규 유저 쉴드 (Cold Start 방어) 판별
-     * 조건: 공급 이력 < 3회 AND 가입 후 24시간 이내
-     * * @param user 대상 유저
-     * @return 신규 유저 쉴드 적용 대상이면 true
-     */
     public boolean isNewUserWithShield(User user) {
-        // 1. 가입 후 24시간 이내 체크
         LocalDateTime dayAgo = LocalDateTime.now().minus(1, ChronoUnit.DAYS);
         boolean isWithin24Hours = user.getCreatedAt().isAfter(dayAgo);
 
@@ -117,36 +91,29 @@ public class MatchingScoreService {
             return false;
         }
 
-        // 2. 공급 이력 3회 미만 체크
         long totalProvides = matchHistoryRepository.countTotalProvides(user.getId());
         boolean hasLessThan3Provides = totalProvides < 3;
-
-        log.debug("User {} New User Shield Check: within24h={}, provides={}, eligible={}",
-                user.getId(), isWithin24Hours, totalProvides, hasLessThan3Provides);
 
         return hasLessThan3Provides;
     }
 
     /**
-     * 매칭 타겟 판별 (가중치 + 신규 유저 쉴드 종합 판단)
-     * * @param user 대상 유저
-     * @param requestedItemName 요청된 물건 이름
-     * @param cutoffScore 컷오프 점수 (일반: 40점, 정예: 80점)
-     * @return 타겟 조건 충족 시 true
+     * 컷오프 심사 결과 로그 출력
      */
     public boolean isEligibleTarget(User user, String requestedItemName, double cutoffScore) {
-        // 신규 유저 쉴드가 적용되면 점수 무관하게 1차 타겟 자격 부여
+        // 1. 신규 유저 쉴드 판별 로그
         if (isNewUserWithShield(user)) {
-            log.info("User {} eligible by NEW USER SHIELD (score check bypassed)", user.getId());
+            log.info("   ⭐ [심사 프리패스] 유저 #{} ({}) -> 신규 유저 쉴드 활성화 (점수 검사 우회)", user.getId(), user.getNickname());
             return true;
         }
 
-        // 일반 유저는 가중치 점수 기준으로 판별
+        // 2. 가중치 계산 및 컷오프 비교 로그
         double score = calculateMatchingScore(user, requestedItemName);
         boolean eligible = score >= cutoffScore;
 
-        log.debug("User {} eligibility: score={}, cutoff={}, eligible={}",
-                user.getId(), score, cutoffScore, eligible);
+        // 🔥 [핵심 개선] 심사 통과/탈락 여부를 콘솔에 직관적으로 표시합니다.
+        log.info("   ⚖️  [심사 최종결과] 유저 #{} ({}) -> 점수: {}점 (요구 컷오프: {}점) -> 📋 {}",
+                user.getId(), user.getNickname(), score, cutoffScore, eligible ? "통과 (알림 발송 예정) 🎯" : "탈락 (점수 미달) ❌");
 
         return eligible;
     }
