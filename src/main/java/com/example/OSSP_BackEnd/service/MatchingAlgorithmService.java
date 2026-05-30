@@ -30,8 +30,8 @@ public class MatchingAlgorithmService {
     private final FcmService fcmService;
 
     // 가중치 점수 컷오프
-    private static final double GENERAL_TARGET_CUTOFF = 0.0;  // 디버깅/테스트 후 40.0으로 복구
-    private static final double ELITE_TARGET_CUTOFF = 80.0;   
+    private static final double GENERAL_TARGET_CUTOFF = 30.0;  // 디버깅/테스트 후 40.0으로 복구
+    private static final double ELITE_TARGET_CUTOFF = 70.0;   
 
     // 캠퍼스 건물 인접 리스트 (그래프 노드)
     private static final Map<String, List<String>> ADJACENT_BUILDINGS = new HashMap<>() {{
