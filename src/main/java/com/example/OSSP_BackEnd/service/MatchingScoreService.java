@@ -95,11 +95,33 @@ public class MatchingScoreService {
     }
 
     /**
-     * 3. 물건 대여 이력 (20%) - 해당 물건을 빌려준 적이 있으면 100점, 없으면 0점
+     * 3. 물건 대여 이력 (20%) 
+     * - 동일/유사 물건 대여 이력: 100점 (만점)
+     * - 다른 물건이라도 대여 이력 있음: 50점
+     * - 대여 이력 없음: 0점
      */
     private double calculateItemHistoryScore(User user, String requestedItemName) {
-        boolean hasHistory = matchHistoryRepository.hasProvidedItemBefore(user.getId(), requestedItemName);
-        return hasHistory ? 100.0 : 0.0;  // 100점 or 0점 (가중치 20%가 곱해짐)
+        // 1. 요청 물건 이름 전처리 (공백 완전 제거 및 소문자 변환)
+        // 예: "아이패드 충전기" -> "아이패드충전기"
+        String cleanRequestedName = requestedItemName.replaceAll("\\s+", "").toLowerCase();
+
+        // 2. 유사 물건 대여 이력 확인 (LIKE 검색 + 공백/대소문자 무시)
+        boolean hasMatchingItem = matchHistoryRepository.hasProvidedSimilarItemBefore(user.getId(), cleanRequestedName);
+        
+        if (hasMatchingItem) {
+            log.debug("User {} gets 100 points for matching item history.", user.getId());
+            return 100.0;  // 100점 (최종 매칭 점수에 +20점 폭등)
+        }
+
+        // 3. 동일 물건은 아니지만 아무 물건이나 대여해준 '착한 유저'인지 확인
+        // (isNewUserWithShield에서 사용하는 메서드 재활용)
+        long totalProvides = matchHistoryRepository.countTotalProvides(user.getId());
+        if (totalProvides > 0) {
+            log.debug("User {} gets 50 points for general lending history.", user.getId());
+            return 50.0;   // 50점 (최종 매칭 점수에 +10점 가산)
+        }
+
+        return 0.0; // 이력 아예 없음
     }
 
     /**
