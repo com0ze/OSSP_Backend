@@ -59,8 +59,7 @@ public interface MatchHistoryRepository extends JpaRepository<MatchHistory, Long
      */
     @Query("SELECT CASE WHEN COUNT(m) > 0 THEN true ELSE false END " +
            "FROM MatchHistory m " +
-           // 주의: 엔티티 구조에 따라 m.callRequest.itemName 등 실제 필드명으로 수정이 필요할 수 있습니다.
-           "WHERE m.providerId = :userId " +
-           "AND LOWER(REPLACE(m.itemName, ' ', '')) LIKE CONCAT('%', :cleanItemName, '%')")
+           "WHERE m.provider.id = :userId " +
+           "AND LOWER(REPLACE(m.request.itemName, ' ', '')) LIKE CONCAT('%', :cleanItemName, '%')")
     boolean hasProvidedSimilarItemBefore(@Param("userId") Long userId, @Param("cleanItemName") String cleanItemName);
 }
