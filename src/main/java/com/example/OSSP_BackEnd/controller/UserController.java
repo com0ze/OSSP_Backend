@@ -11,13 +11,12 @@ import com.example.OSSP_BackEnd.security.CustomUserDetails;
 import com.example.OSSP_BackEnd.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -118,28 +117,23 @@ public class UserController {
 
     /**
      * [GET] /api/v1/users/me/reviews
-     * 현재 로그인한 유저가 받은 리뷰 목록을 페이징 조회하는 API (마이페이지용)
-     * 최신순으로 정렬되며, 페이징 처리를 지원합니다.
-     * 
-     * 예시: GET /api/v1/users/me/reviews?page=0&size=10
+     * 현재 로그인한 유저가 받은 리뷰 목록을 조회하는 API (마이페이지용)
+     * 최신순으로 정렬됩니다.
      *
      * @param userDetails 현재 로그인한 사용자 정보
-     * @param pageable 페이징 정보 (기본값: page=0, size=20)
-     * @return ResponseEntity<ApiResponse<Page<UserReviewResponseDto>>> 페이징 처리된 리뷰 목록
+     * @return ResponseEntity<ApiResponse<List<UserReviewResponseDto>>> 리뷰 목록
      */
     @GetMapping("/me/reviews")
-    public ResponseEntity<ApiResponse<Page<UserReviewResponseDto>>> getMyReceivedReviews(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PageableDefault(size = 20, page = 0) Pageable pageable
+    public ResponseEntity<ApiResponse<List<UserReviewResponseDto>>> getMyReceivedReviews(
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Page<UserReviewResponseDto> reviews = userService.getMyReceivedReviews(
-                userDetails.getId(),
-                pageable
+        List<UserReviewResponseDto> reviews = userService.getMyReceivedReviews(
+                userDetails.getId()
         );
 
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        HttpStatus.OK, // 💡 첫 번째 파라미터로 이거 하나만 딱 추가해 주시면 됩니다!
+                        HttpStatus.OK,
                         "내가 받은 리뷰 목록을 성공적으로 조회했습니다.",
                         reviews
                 )
@@ -148,28 +142,23 @@ public class UserController {
 
     /**
      * [GET] /api/v1/users/{userId}/reviews
-     * 특정 유저가 받은 리뷰 목록을 페이징 조회하는 API (타인 프로필용)
-     * 최신순으로 정렬되며, 페이징 처리를 지원합니다.
-     * 
-     * 예시: GET /api/v1/users/123/reviews?page=0&size=10
+     * 특정 유저가 받은 리뷰 목록을 조회하는 API (타인 프로필용)
+     * 최신순으로 정렬됩니다.
      *
      * @param userId 조회할 사용자 ID
-     * @param pageable 페이징 정보 (기본값: page=0, size=20)
-     * @return ResponseEntity<ApiResponse<Page<UserReviewResponseDto>>> 페이징 처리된 리뷰 목록
+     * @return ResponseEntity<ApiResponse<List<UserReviewResponseDto>>> 리뷰 목록
      */
     @GetMapping("/{userId}/reviews")
-    public ResponseEntity<ApiResponse<Page<UserReviewResponseDto>>> getUserReceivedReviews(
-            @PathVariable Long userId,
-            @PageableDefault(size = 20, page = 0) Pageable pageable
+    public ResponseEntity<ApiResponse<List<UserReviewResponseDto>>> getUserReceivedReviews(
+            @PathVariable Long userId
     ) {
-        Page<UserReviewResponseDto> reviews = userService.getUserReceivedReviews(
-                userId,
-                pageable
+        List<UserReviewResponseDto> reviews = userService.getUserReceivedReviews(
+                userId
         );
 
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        HttpStatus.OK, // 💡 여기도 마찬가지로 추가!
+                        HttpStatus.OK,
                         "유저가 받은 리뷰 목록을 성공적으로 조회했습니다.",
                         reviews
                 )

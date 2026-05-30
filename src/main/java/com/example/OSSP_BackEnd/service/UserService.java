@@ -13,10 +13,11 @@ import com.example.OSSP_BackEnd.exception.ResourceNotFoundException;
 import com.example.OSSP_BackEnd.repository.UserRepository;
 import com.example.OSSP_BackEnd.repository.UserReviewRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +30,7 @@ public class UserService {
     /**
      * 유저 위치 정보 갱신 (경량화 버전)
      * 프론트엔드에서 지오펜싱 처리 후 건물명만 받아서 저장
-     * 
+     *
      * @param userId 사용자 ID
      * @param dto 건물 정보
      */
@@ -40,7 +41,7 @@ public class UserService {
 
         // 건물명을 Building Enum으로 변환하여 유효성 검증
         Building building = Building.fromString(dto.currentBuilding());
-        
+
         // 유효한 건물인 경우 Enum 상수명을 저장, 그렇지 않으면 "OUTSIDE" 저장
         String buildingName = (building != null) ? building.name() : "OUTSIDE";
 
@@ -50,7 +51,7 @@ public class UserService {
 
     /**
      * FCM 기기 토큰 등록/갱신
-     * 
+     *
      * @param userId 사용자 ID
      * @param dto FCM 토큰 정보
      */
@@ -65,7 +66,7 @@ public class UserService {
 
     /**
      * 알림 받기 ON/OFF 상태 변경
-     * 
+     *
      * @param userId 사용자 ID
      * @param dto 알림 받기 설정 정보
      */
@@ -81,7 +82,7 @@ public class UserService {
     /**
      * 특정 유저 프로필 조회
      * 민감한 정보(password, deviceToken)는 제외하고 안전한 정보만 반환
-     * 
+     *
      * @param userId 조회할 사용자 ID
      * @return UserProfileResponseDto 유저 프로필 정보
      */
@@ -108,46 +109,47 @@ public class UserService {
 
     /**
      * 현재 로그인한 유저가 받은 리뷰 목록 조회 (마이페이지용)
-     * 페이징 처리 및 최신순 정렬 적용
-     * 
+     * 최신순 정렬 적용
+     *
      * @param userId 현재 로그인한 사용자 ID
-     * @param pageable 페이징 정보 (page, size, sort)
-     * @return Page<UserReviewResponseDto> 페이징 처리된 리뷰 목록
+     * @return List<UserReviewResponseDto> 리뷰 목록
      */
-    public Page<UserReviewResponseDto> getMyReceivedReviews(Long userId, Pageable pageable) {
+    public List<UserReviewResponseDto> getMyReceivedReviews(Long userId) {
         // 사용자 존재 여부 검증
         if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("현재 로그인한 사용자를 찾을 수 없습니다.");
         }
 
-        // 페이징 처리된 리뷰 조회 (N+1 문제 방지를 위해 JOIN FETCH 사용)
-        Page<UserReview> reviewPage = userReviewRepository
-                .findByRevieweeIdOrderByCreatedAtDesc(userId, pageable);
+        // 리뷰 조회 (N+1 문제 방지를 위해 JOIN FETCH 사용)
+        List<UserReview> reviews = userReviewRepository
+                .findByRevieweeIdOrderByCreatedAtDesc(userId);
 
         // Entity → DTO 변환
-        return reviewPage.map(UserReviewResponseDto::from);
+        return reviews.stream()
+                .map(UserReviewResponseDto::from)
+                .collect(Collectors.toList());
     }
 
     /**
      * 특정 유저가 받은 리뷰 목록 조회 (타인 프로필용)
-     * 페이징 처리 및 최신순 정렬 적용
-     * 
+     * 최신순 정렬 적용
+     *
      * @param userId 조회할 사용자 ID
-     * @param pageable 페이징 정보 (page, size, sort)
-     * @return Page<UserReviewResponseDto> 페이징 처리된 리뷰 목록
+     * @return List<UserReviewResponseDto> 리뷰 목록
      */
-    public Page<UserReviewResponseDto> getUserReceivedReviews(Long userId, Pageable pageable) {
+    public List<UserReviewResponseDto> getUserReceivedReviews(Long userId) {
         // 사용자 존재 여부 검증
         if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("사용자를 찾을 수 없습니다.");
         }
 
-        // 페이징 처리된 리뷰 조회 (N+1 문제 방지를 위해 JOIN FETCH 사용)
-        Page<UserReview> reviewPage = userReviewRepository
-                .findByRevieweeIdOrderByCreatedAtDesc(userId, pageable);
+        // 리뷰 조회 (N+1 문제 방지를 위해 JOIN FETCH 사용)
+        List<UserReview> reviews = userReviewRepository
+                .findByRevieweeIdOrderByCreatedAtDesc(userId);
 
         // Entity → DTO 변환
-        return reviewPage.map(UserReviewResponseDto::from);
+        return reviews.stream()
+                .map(UserReviewResponseDto::from)
+                .collect(Collectors.toList());
     }
 }
-

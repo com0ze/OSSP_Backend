@@ -53,4 +53,17 @@ public interface UserReviewRepository extends JpaRepository<UserReview, Long> {
             @Param("revieweeId") Long revieweeId,
             Pageable pageable
     );
+
+    /**
+     * 특정 사용자가 받은 모든 리뷰를 최신순으로 조회합니다. (N+1 문제 방지)
+     * @param revieweeId 평가받은 사용자의 ID
+     * @return 리뷰 목록
+     */
+    @Query("SELECT ur FROM UserReview ur " +
+           "JOIN FETCH ur.reviewer " +
+           "WHERE ur.reviewee.id = :revieweeId " +
+           "ORDER BY ur.createdAt DESC")
+    List<UserReview> findByRevieweeIdOrderByCreatedAtDesc(
+            @Param("revieweeId") Long revieweeId
+    );
 }

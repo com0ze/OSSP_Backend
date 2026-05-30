@@ -3,6 +3,7 @@ package com.example.OSSP_BackEnd.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod; // HttpMethod 임포트 추가
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -32,7 +33,8 @@ public class SecurityConfig {
         "/api/v1/auth/**",
         "/swagger-ui/**",
         "/v3/api-docs/**",
-        "/swagger-resources/**"
+        "/swagger-resources/**",
+        "/ws-stomp/**"
     };
 
     @Bean
@@ -50,6 +52,11 @@ public class SecurityConfig {
             // HTTP 요청에 대한 접근 권한 설정
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(AUTH_WHITELIST).permitAll() // 허용 목록에 있는 경로는 인증 없이 접근 허용
+                // GET 요청에 대한 접근 권한 설정 추가
+                .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/v1/users/me/reviews").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/v1/users/{userId}").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/v1/users/{userId}/reviews").authenticated()
                 .anyRequest().authenticated() // 나머지 모든 경로는 인증 필요
             )
             
