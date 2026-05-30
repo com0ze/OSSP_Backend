@@ -27,7 +27,7 @@ public class MatchingAlgorithmService {
     private final FcmService fcmService;
 
     // 가중치 점수 컷오프
-    private static final double GENERAL_TARGET_CUTOFF = 40.0;  // 일반 타겟: 40점 이상
+    private static final double GENERAL_TARGET_CUTOFF = 0.0;  // 일반 타겟: 40점 이상
     private static final double ELITE_TARGET_CUTOFF = 80.0;    // 정예 타겟: 80점 이상
 
     /**
@@ -68,8 +68,14 @@ public class MatchingAlgorithmService {
         String requestBuilding = callRequest.getBuildingName();
         String itemName = callRequest.getItemName();
 
+        // 🔥 [이 로그를 추가해 주세요!] 프론트가 정확히 어떤 건물 이름을 보냈는지 확인
+        log.info("요청 건물명(프론트가 보낸 값): {}", requestBuilding);
+
         // 1. 일반 타겟: 동일 건물에 있는 유저
         List<User> sameBuildingUsers = userRepository.findActiveUsersInBuilding(requestBuilding);
+        // 🔥 [이 로그를 추가해 주세요!] DB에서 필터링 전에 몇 명을 꺼내왔는지 확인
+        log.info("DB에서 꺼내온 동일 건물 유저 수: {}명", sameBuildingUsers.size());
+        
         List<User> generalTargets = sameBuildingUsers.stream()
                 .filter(user -> matchingScoreService.isEligibleTarget(user, itemName, GENERAL_TARGET_CUTOFF))
                 .collect(Collectors.toList());

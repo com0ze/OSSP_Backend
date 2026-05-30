@@ -31,8 +31,7 @@ public class MatchingScoreService {
 
     /**
      * 매칭 파워 스코어 계산 (0~100점)
-     * 
-     * @param user 대상 유저
+     * * @param user 대상 유저
      * @param requestedItemName 수요자가 요청한 물건 이름
      * @return 매칭 파워 스코어 (0~100)
      */
@@ -68,24 +67,35 @@ public class MatchingScoreService {
     }
 
     /**
-     * 2. 최근 7일 대여 횟수 (30%) - 비례 계산
-     * 0회 = 0점, 5회 이상 = 만점(100점)
+     * 2. 최근 활동 점수 (30%) - 최근 접속 시간(last_active_at) 기준 
+     * 방금 접속한 유저일수록 실시간 매칭 확률이 높으므로 높은 점수 부여
      */
     private double calculateRecentActivityScore(User user) {
-        LocalDateTime sevenDaysAgo = LocalDateTime.now().minus(7, ChronoUnit.DAYS);
-        long recentCount = matchHistoryRepository.countRecentCompletedProvides(user.getId(), sevenDaysAgo);
+        // 접속 기록이 없으면 0점 처리
+        if (user.getLastActiveAt() == null) {
+            return 0.0; 
+        }
 
-        // 5회 이상이면 만점
-        if (recentCount >= 5) {
+        LocalDateTime now = LocalDateTime.now();
+        long hoursElapsed = ChronoUnit.HOURS.between(user.getLastActiveAt(), now);
+
+        // 1시간 이내 방금 전 접속한 유저는 만점 (100점)
+        if (hoursElapsed <= 1) {
             return 100.0;
         }
 
-        // 비례 계산: (실제 횟수 / 5) * 100
-        return (recentCount / 5.0) * 100.0;
+        // 7일(168시간) 이상 장기 미접속 유저는 0점
+        if (hoursElapsed >= 168) {
+            return 0.0;
+        }
+
+        // 그 외의 경우 시간에 비례하여 선형 차감 (최대 168시간 기준)
+        double decayRatio = 1.0 - ((double) hoursElapsed / 168.0);
+        return Math.round(decayRatio * 1000.0) / 10.0; // 소수점 첫째 자리까지 반올림
     }
 
     /**
-     * 3. 물건 대여 이력 (20%) - 해당 물건을 빌려준 적이 있으면 20점, 없으면 0점
+     * 3. 물건 대여 이력 (20%) - 해당 물건을 빌려준 적이 있으면 100점, 없으면 0점
      */
     private double calculateItemHistoryScore(User user, String requestedItemName) {
         boolean hasHistory = matchHistoryRepository.hasProvidedItemBefore(user.getId(), requestedItemName);
@@ -95,8 +105,7 @@ public class MatchingScoreService {
     /**
      * 신규 유저 쉴드 (Cold Start 방어) 판별
      * 조건: 공급 이력 < 3회 AND 가입 후 24시간 이내
-     * 
-     * @param user 대상 유저
+     * * @param user 대상 유저
      * @return 신규 유저 쉴드 적용 대상이면 true
      */
     public boolean isNewUserWithShield(User user) {
@@ -120,10 +129,9 @@ public class MatchingScoreService {
 
     /**
      * 매칭 타겟 판별 (가중치 + 신규 유저 쉴드 종합 판단)
-     * 
-     * @param user 대상 유저
+     * * @param user 대상 유저
      * @param requestedItemName 요청된 물건 이름
-     * @param cutoffScore 컷오프 점수 (일반: 50점, 정예: 80점)
+     * @param cutoffScore 컷오프 점수 (일반: 40점, 정예: 80점)
      * @return 타겟 조건 충족 시 true
      */
     public boolean isEligibleTarget(User user, String requestedItemName, double cutoffScore) {
