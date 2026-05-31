@@ -180,7 +180,7 @@ public class MatchingAlgorithmService {
         }
 
         String title = String.format("🎯 새로운 대여 요청 (%s)", callRequest.getBuildingName());
-        String body = String.format("%s - 보상금 %d원 (기간: %d분)", 
+        String body = String.format("%s - 보상금 %d원 (기간: %d시간)",
                 callRequest.getItemName(), callRequest.getRewardAmt(), callRequest.getDuration());
 
         int successCount = 0;
