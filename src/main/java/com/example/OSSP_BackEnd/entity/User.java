@@ -42,7 +42,7 @@ public class User implements UserDetails {
     @Column(name = "manner_score", precision = 3, scale = 1)
     private BigDecimal mannerScore;
 
-    @Column(name = "is_on_duty", nullable = true)
+    @Column(name = "is_on_duty", nullable = false)
     private Boolean isOnDuty;
 
     @Column(name = "current_building", length = 50)
@@ -70,7 +70,7 @@ public class User implements UserDetails {
         this.email = email;
         this.password = password;
         this.mannerScore = BigDecimal.valueOf(3.0);
-        this.isOnDuty = false;
+        this.isOnDuty = true;
         this.role = Role.ROLE_USER; // 신규 사용자 기본 역할
     }
 
