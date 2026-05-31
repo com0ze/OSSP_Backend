@@ -42,11 +42,11 @@ public class User implements UserDetails {
     @Column(name = "manner_score", precision = 3, scale = 1)
     private BigDecimal mannerScore;
 
-    @Column(name = "is_on_duty", nullable = false) // Added nullable = false
+    @Column(name = "is_on_duty", nullable = true)
     private Boolean isOnDuty;
 
     @Column(name = "current_building", length = 50)
-    private String currentBuilding;
+    private String currentBuilding = "OUTSIDE";
 
     @Column(name = "fcm_token", length = 255)
     private String fcmToken;
