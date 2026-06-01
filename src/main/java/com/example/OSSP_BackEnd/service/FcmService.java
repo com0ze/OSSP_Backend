@@ -6,6 +6,7 @@ import com.google.firebase.messaging.Aps;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -18,8 +19,9 @@ public class FcmService {
      * @param targetToken 알림을 받을 유저의 기기 토큰 (프론트가 주는 엄청 긴 문자열)
      * @param title       알림 제목 (예: "대여 매칭 완료!")
      * @param body        알림 내용 (예: "강현님이 대여 요청을 수락했습니다.")
+     * @param data        알림에 담을 추가 데이터
      */
-    public void sendMessageTo(String targetToken, String title, String body) {
+    public void sendMessageTo(String targetToken, String title, String body, Map<String, String> data) {
         try {
             // 1. 알림(Notification) 조립
             Notification notification = Notification.builder()
@@ -28,7 +30,7 @@ public class FcmService {
                     .build();
 
             // 2. 메시지(Message) 객체 생성 및 OS별 최고 우선순위(Priority) 강제 주입
-            Message message = Message.builder()
+            Message.Builder messageBuilder = Message.builder()
                     .setToken(targetToken)
                     .setNotification(notification)
                     
@@ -43,8 +45,14 @@ public class FcmService {
                                     .setSound("default")
                                     .build())
                             .putHeader("apns-priority", "10")
-                            .build())
-                    .build();
+                            .build());
+
+            // data 페이로드가 있는 경우 메시지에 추가
+            if (data != null && !data.isEmpty()) {
+                messageBuilder.putAllData(data);
+            }
+
+            Message message = messageBuilder.build();
 
             // 3. 구글(FCM) 서버로 전송
             String response = FirebaseMessaging.getInstance().send(message);

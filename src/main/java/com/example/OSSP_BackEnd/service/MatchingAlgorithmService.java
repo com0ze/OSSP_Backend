@@ -31,7 +31,7 @@ public class MatchingAlgorithmService {
 
     // 가중치 점수 컷오프
     private static final double GENERAL_TARGET_CUTOFF = 30.0;  // 디버깅/테스트 후 40.0으로 복구
-    private static final double ELITE_TARGET_CUTOFF = 70.0;   
+    private static final double ELITE_TARGET_CUTOFF = 70.0;
 
     // 캠퍼스 건물 인접 리스트 (그래프 노드)
     private static final Map<String, List<String>> ADJACENT_BUILDINGS = new HashMap<>() {{
@@ -63,7 +63,7 @@ public class MatchingAlgorithmService {
     @Transactional // 💡 DB에 변경된 상태(CANCELED)를 커밋하기 위해 Write 권한 트랜잭션 추가
     public void executeDynamicMatching(CallRequest callRequest, int elapsedMinutes) {
         log.info("========== [동적 매칭 확장] 요청 ID: #{}, 경과 시간: {}분 ==========", callRequest.getId(), elapsedMinutes);
-        
+
         String requestBuilding = callRequest.getBuildingName();
         String itemName = callRequest.getItemName();
         Long requesterId = callRequest.getRequester().getId();
@@ -123,14 +123,21 @@ public class MatchingAlgorithmService {
         if (requester.getFcmToken() != null) {
             String title = "매칭이 어려운 상황이에요 😢";
             String body = String.format("보상금을 올려서 다시 요청해보시겠어요? (현재: %d원)", callRequest.getRewardAmt());
-            fcmService.sendMessageTo(requester.getFcmToken(), title, body);
+
+            // 데이터 페이로드 생성
+            Map<String, String> data = new HashMap<>();
+            data.put("type", "MATCHING_FAILED");
+            data.put("requestId", callRequest.getId().toString());
+            data.put("click_action", "FLUTTER_NOTIFICATION_CLICK");
+
+            fcmService.sendMessageTo(requester.getFcmToken(), title, body, data);
             log.info("✅ 매칭 실패 넛지 알림 전송 완료 (요청 ID: #{})", callRequest.getId());
         }
 
         // 🔥 [좀비 스케줄러 방지 로직] 상태를 CANCELED로 업데이트하고 DB에 즉시 저장
         callRequest.markAsCanceled(); // (혹시 메서드명이 다르면 callRequest.setStatus(RequestStatus.CANCELED); 로 변경해주세요)
         callRequestRepository.save(callRequest);
-        
+
         log.info("🛑 대여 요청 #{} 상태를 CANCELED로 변경하여 스케줄러 무한 루프를 차단했습니다.", callRequest.getId());
     }
 
@@ -144,22 +151,22 @@ public class MatchingAlgorithmService {
 
         Set<String> visited = new HashSet<>();
         Queue<String> queue = new LinkedList<>();
-        
+
         queue.add(startBuilding);
         visited.add(startBuilding);
-        
+
         int currentDistance = 0;
-        
+
         while (!queue.isEmpty()) {
             if (currentDistance == targetDistance) {
-                return new HashSet<>(queue); 
+                return new HashSet<>(queue);
             }
-            
+
             int size = queue.size();
             for (int i = 0; i < size; i++) {
                 String current = queue.poll();
                 List<String> neighbors = ADJACENT_BUILDINGS.getOrDefault(current, Collections.emptyList());
-                
+
                 for (String neighbor : neighbors) {
                     if (!visited.contains(neighbor)) {
                         visited.add(neighbor);
@@ -169,8 +176,8 @@ public class MatchingAlgorithmService {
             }
             currentDistance++;
         }
-        
-        return Collections.emptySet(); 
+
+        return Collections.emptySet();
     }
 
     private void sendNotifications(List<User> targets, CallRequest callRequest, String logPrefix) {
@@ -181,13 +188,19 @@ public class MatchingAlgorithmService {
 
         String title = String.format("🎯 새로운 대여 요청 (%s)", callRequest.getBuildingName());
         String body = String.format("%s - 보상금 %d원 (기간: %d시간)",
-                callRequest.getItemName(), callRequest.getRewardAmt(), callRequest.getDuration());
+                callRequest.getItemName(), callRequest.getRewardAmt(), callRequest.getDuration()/60);
+
+        // 데이터 페이로드 생성
+        Map<String, String> data = new HashMap<>();
+        data.put("type", "RENTAL_REQUEST");
+        data.put("requestId", callRequest.getId().toString());
+        data.put("click_action", "FLUTTER_NOTIFICATION_CLICK");
 
         int successCount = 0;
         for (User user : targets) {
             if (user.getFcmToken() != null) {
                 try {
-                    fcmService.sendMessageTo(user.getFcmToken(), title, body);
+                    fcmService.sendMessageTo(user.getFcmToken(), title, body, data);
                     successCount++;
                 } catch (Exception e) {
                     log.error("[{}] 유저 #{} FCM 발송 실패: {}", logPrefix, user.getId(), e.getMessage());
